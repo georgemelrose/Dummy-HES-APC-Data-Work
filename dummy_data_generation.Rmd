@@ -1,0 +1,547 @@
+---
+title: "dummy_data_generation"
+author: "George Melrose"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+pacman::p_load(tidyverse, icd,knitr,
+               kableExtra,finalfit,lubridate,data.table,
+               janitor,flextable,survival,survminer,cmprsk,
+               rmdHelpers)
+
+rm(list = ls())
+
+```
+
+```{r Creating data frame with patient data, message=FALSE,warning=FALSE,include = FALSE, echo = FALSE}
+#Generate dummy data for 100,000 patients
+n_patients <- 100000
+
+# Create a data frame with n_patients rows
+dummy_data <- tibble(
+  patient_id = 1:n_patients,
+  death = sample(c("Yes", "No"), n_patients, replace = TRUE),
+  readmission = sample(c("Yes", "No"), n_patients, replace = TRUE),
+  cause_of_readmission = NA_integer_,
+  days_until_readmission = NA_integer_,
+  days_until_death = NA_integer_,
+  cause_of_death = NA_integer_
+)
+
+# Generate readmissions and deaths
+for (i in 1:n_patients) {
+  if (dummy_data$death[i] == "Yes") {
+    dummy_data$days_until_death[i] <- sample(1:730, 1)
+    if (dummy_data$readmission[i] == "Yes") {
+      dummy_data$days_until_readmission[i] <- sample(1:(dummy_data$days_until_death[i] - 1), 1)
+      dummy_data$cause_of_readmission[i] <- sample(1:730, 1)
+    }
+    dummy_data$cause_of_death[i] <- sample(1:730, 1)
+  } else if (dummy_data$readmission[i] == "Yes") {
+    dummy_data$days_until_readmission[i] <- sample(1:730, 1)
+    dummy_data$cause_of_readmission[i] <- sample(1:730, 1)
+  }
+}
+
+# Add columns for date of death, date of readmission, cause of readmission, and days until readmission
+dummy_data <- dummy_data %>%
+  mutate(
+    date_of_death = ifelse(death == "Yes", as.Date("2020-03-01") + days_until_death - 1, NA),
+    date_of_first_readmission = ifelse(readmission == "Yes", as.Date("2020-03-01") + days_until_readmission - 1, NA)
+  )
+
+# Convert columns to date format
+date_cols <- c("date_of_death", "date_of_first_readmission")
+dummy_data[date_cols] <- lapply(dummy_data[date_cols], as.Date)
+
+```
+
+```{r Check if any dates of readmission are after a date of death, message=FALSE,warning=FALSE,include = FALSE, echo = FALSE}
+#Check if any dates of readmission are after a date of death
+has_invalid_dates <- any(
+  !is.na(dummy_data$date_of_death) &
+  !is.na(dummy_data$date_of_first_readmission) &
+  dummy_data$date_of_first_readmission > dummy_data$date_of_death
+)
+
+if (has_invalid_dates) {
+  cat("There are dates of readmission after dates of death.\n")
+} else {
+  cat("All dates of readmission are before or on dates of death.\n")
+}
+
+```
+
+```{r insert patient characteristics, message=FALSE,warning=FALSE,include = FALSE, echo = FALSE}
+# Copy the variables from the original 01_data_prep.R (4C mortality) code
+# Sample data for ethnicity_4levels
+ethnicity_levels <- c("White", "South Asian", "East Asian", "Black", "Other Ethnic Minority")
+ethnicity_4levels <- sample(ethnicity_levels, n_patients, replace = TRUE)
+
+
+# Generate dummy data
+dummy_data <- dummy_data %>%
+  mutate(
+    hypertension_mhyn = factor(sample(c("Yes", "No"), n_patients, replace = TRUE), levels = c("Yes", "No")) %>% relevel(ref = "No"),
+    chrincard = factor(sample(c("Yes", "No"), n_patients, replace = TRUE), levels = c("Yes", "No")) %>% relevel(ref = "No"),
+    malnutrition_mhyn = factor(sample(c("Yes", "No"), n_patients, replace = TRUE), levels = c("Yes", "No")) %>% relevel(ref = "No"),
+    dehydration_vsorres = factor(sample(c("Yes", "No"), n_patients, replace = TRUE), levels = c("Yes", "No")) %>% relevel(ref = "No"),
+    diabetes_type_mhyn = factor(sample(c("Yes", "No"), n_patients, replace = TRUE), levels = c("Yes", "No")) %>% relevel(ref = "No"),
+    sex = sample(c("Male", "Female"), n_patients, replace = TRUE),
+    ethnicity_4levels = ethnicity_4levels,
+    alt_conscious = factor(sample(c("Yes", "No"), n_patients, replace = TRUE), levels = c("Yes", "No")) %>% relevel(ref = "No"),
+    hypoxic_target = factor(sample(c("Yes", "No"), n_patients, replace = TRUE), levels = c("Yes", "No")) %>% relevel(ref = "No"),
+    o2_rx = factor(sample(c("Yes", "No"), n_patients, replace = TRUE), levels = c("Yes", "No")) %>% relevel(ref = "No"),
+    NLR = runif(n_patients, 0, 10),
+    diabetes_combined = factor(sample(c("Yes", "No"), n_patients, replace = TRUE), levels = c("Yes", "No")) %>% relevel(ref = "No"),
+    sysbp_vsorres = runif(n_patients, 80, 180),
+    admission_diabp_vsorres = runif(n_patients, 60, 100),
+    oxy_vsorres = runif(n_patients, 90, 100),
+    no_comorbid = factor(sample(c("0", "1", "2", ">2"), n_patients, replace = TRUE), levels = c("0", "1", "2", ">2")) %>% relevel(ref = "0"),
+    infiltrates_faorres = factor(sample(c("Yes", "No"), n_patients, replace = TRUE), levels = c("Yes", "No")) %>% relevel(ref = "No"),
+    age.factor = sample(18:100, n_patients, replace = TRUE),
+    daily_ldh_lborres = runif(n_patients, 0, 300),
+    daily_d_dimer_lborres = runif(n_patients, 0, 5),
+    dialysis = factor(sample(c("Yes", "No"), n_patients, replace = TRUE), levels = c("Yes", "No")) %>% relevel(ref = "No")
+  )
+
+
+# Convert ethnicity_4levels to a factor
+ethnicity_4levels <- factor(ethnicity_4levels, levels = ethnicity_levels)
+
+# Set "White" as the reference level
+ethnicity_4levels <- relevel(ethnicity_4levels, ref = "White")
+
+fwrite(dummy_data, file.path("dummy_data_wo_icd_codes.csv"))
+```
+
+```{r Loading in dummy data, warning=FALSE, message=FALSE,include = FALSE, echo = FALSE}
+dummy_data <- read_csv("dummy_data_wo_icd_codes.csv")
+
+dummy_data %>% count(death)
+
+dummy_data %>% count(readmission)
+
+```
+
+```{r fetching causes of death and readmission, warning=FALSE, message=FALSE,include = FALSE, echo = FALSE}
+icd10cm2019 <- as.data.frame(icd10cm2019 )
+# Combine the 3-digit ICD10 chapters and add "U07"
+icd10_3_digit_chapters <- as.vector(unique(icd10cm2019$three_digit))
+icd10_3_digit_chapters <- c(icd10_3_digit_chapters, "U07")
+
+# Fetch ICD10 codes for cause_of_death variable
+dummy_data$cause_of_death[dummy_data$death == "Yes"] <- sample(icd10_3_digit_chapters, sum(dummy_data$death == "Yes"), replace = TRUE)
+
+# Fetch ICD10 codes for cause_of_readmission variable
+dummy_data$cause_of_readmission[dummy_data$readmission == "Yes"] <- sample(icd10_3_digit_chapters, sum(dummy_data$readmission == "Yes"), replace = TRUE)
+
+
+# Convert cause_of_death and cause_of_readmission to factors
+dummy_data$cause_of_death <- as.factor(dummy_data$cause_of_death)
+dummy_data$cause_of_readmission <- as.factor(dummy_data$cause_of_readmission)
+
+# Count occurrences of causes of death and causes of readmission
+causes_of_death <- dummy_data %>% count(cause_of_death)
+causes_of_readmission <- dummy_data %>% count(cause_of_readmission)
+```
+
+```{r fetching causes of death and adding in covid chapter u, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+#Get chapters for causes of death #
+
+chapters <- icd10cm2019 %>% select(three_digit, chapter)
+
+chapters <- chapters[!duplicated(chapters$three_digit), ]
+
+chapters$three_digit <- factor(chapters$three_digit, levels = unique(chapters$three_digit))
+
+class(chapters$three_digit)
+
+dummy_data <- left_join(dummy_data, chapters, by = c("cause_of_death"="three_digit"))
+
+dummy_data <- dummy_data %>% dplyr::rename("cause of death chapter" = "chapter")
+
+dummy_data$`cause of death chapter` <- as.character(dummy_data$`cause of death chapter`)
+
+dummy_data$`cause of death chapter`[dummy_data$cause_of_death == "U07"] <- "COVID-19"
+
+```
+
+```{r fetching causes of readmission and adding in covid chapter u, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+#Get chapters for causes of readmission#
+
+dummy_data <- left_join(dummy_data, chapters, by = c("cause_of_readmission"="three_digit"))
+
+dummy_data <- dummy_data %>% dplyr::rename("cause of readmission chapter" = "chapter")
+
+dummy_data$`cause of readmission chapter` <- as.character(dummy_data$`cause of readmission chapter`)
+
+dummy_data$`cause of readmission chapter`[dummy_data$cause_of_readmission == "U07"] <- "COVID-19"
+
+```
+
+```{r Bringing deaths down to more realistic level of eleven percent, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+# Calculate the number of "Yes" entries based on the desired percentage
+total_rows <- nrow(dummy_data)
+desired_Yes_rows <- round(0.11 * total_rows)
+
+# Create a vector of indices for "Yes" entries
+Yes_indices <- sample(1:total_rows, size = desired_Yes_rows)
+
+# # Generate days_until_death for all rows
+dummy_data$days_until_death <- NA_integer_
+dummy_data$days_until_death[Yes_indices] <- sample(1:730, length(Yes_indices), replace = TRUE)
+
+# # Update the "death" column
+dummy_data$death <- "No"
+dummy_data$death[Yes_indices] <- "Yes"
+
+# # Generate date_of_death for "Yes" entries
+dummy_data$date_of_death <- ifelse(dummy_data$death == "Yes", as.Date("2020-03-01") + dummy_data$days_until_death - 1, NA)
+
+
+
+```
+
+```{r Bringing causes of readmission to realistic proportions with covid-19 at forty precent, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+
+#Set the seed for reproducibility
+set.seed(456)
+
+# # Calculate the number of "U07" entries based on the desired percentage
+total_rows <- nrow(dummy_data)
+desired_u07_rows <- round(0.4 * total_rows)
+
+# # Create a vector of indices for "U07" entries
+u07_indices <- sample(1:total_rows, size = desired_u07_rows)
+
+# # Set "U07" for the selected indices
+dummy_data$cause_of_readmission[u07_indices] <- "U07"
+
+causes_of_readmission <- dummy_data %>% count(cause_of_readmission)
+```
+
+```{r Bringing causes of readmissiont, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+# 
+# # Set the seed for reproducibility
+set.seed(456)
+
+# # Calculate the number of "U07" entries based on the desired percentage
+total_rows <- nrow(dummy_data)
+desired_u07_rows <- round(0.4 * total_rows)
+
+# Create a vector of indices for "U07" entries
+u07_indices <- sample(1:total_rows, size = desired_u07_rows)
+
+# Set "U07" for the selected indices
+dummy_data$cause_of_readmission[u07_indices] <- "U07"
+
+causes_of_readmission <- dummy_data %>% count(cause_of_readmission)
+```
+
+```{r Bringing causes of readmission to realistic proportions with flu and pneumonia  at twenty precent, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+# Set the seed for reproducibility
+set.seed(456)
+
+# List of codes you want to populate along with their desired percentages
+desired_entries <- list(
+  list(code = "U07", percentage = 40),
+  list(code = "J09", percentage = 1.82),
+  list(code = "J10", percentage = 1.82),
+  list(code = "J11", percentage = 1.82),
+  list(code = "J12", percentage = 1.82),
+  list(code = "J13", percentage = 1.82),
+  list(code = "J14", percentage = 1.82),
+  list(code = "J15", percentage = 1.82),
+  list(code = "J16", percentage = 1.82),
+  list(code = "J11.82", percentage = 1.82),
+  list(code = "J18", percentage = 1.82),
+  list(code = "J19", percentage = 1.82),
+  list(code = "R69", percentage = 7),
+  list(code = "J44", percentage = 7),
+  list(code = c("I05", "I06", "I07", "I08", "I09"), percentage = 10)
+)
+
+# Calculate the number of desired entries based on percentages
+total_rows <- nrow(dummy_data)
+desired_rows_per_code <- sapply(desired_entries, function(entry) {
+  round(entry$percentage / 100 * total_rows)
+})
+
+# Create a vector of indices for "U07" entries
+u07_indices <- sample(1:total_rows, size = desired_rows_per_code[[1]])
+
+# # Loop through the remaining desired entries and set the codes for the selected indices
+for (i in 2:length(desired_entries)) {
+  entry <- desired_entries[[i]]
+  desired_indices <- sample(setdiff(1:total_rows, u07_indices), size = desired_rows_per_code[i])
+  dummy_data$cause_of_readmission[desired_indices] <- entry$code
+}
+
+causes_of_readmission <- dummy_data %>% count(cause_of_readmission)
+```
+
+```{r Manipulating age variable, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+
+dummy_data <- dummy_data %>% dplyr::rename("age" = "age.factor")
+
+# Define the age breakpoints for the categories
+breakpoints <- c(0, 49, 69, 79, Inf)
+
+# Create the age.factor variable using the cut() function
+dummy_data$age.factor <- cut(dummy_data$age, breaks = breakpoints,
+                             labels = c("<50", "50-69", "70-79", "80+"),
+                             right = FALSE)
+
+dummy_data$age.factor <- relevel(dummy_data$age.factor, ref = "<50")
+
+
+# Convert the age.factor variable to a factor
+dummy_data$age.factor <- as.factor(dummy_data$age.factor)
+
+# Print the levels of the age.factor variable
+levels(dummy_data$age.factor)
+
+dummy_data %>% count(age.factor)
+
+dummy_data %>% count(age.factor, death)
+```
+
+```{r ensuring deaths are more realistically distributed amongst age factor groups,  warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+
+# Set the seed for reproducibility
+set.seed(123)
+
+# Define the factor levels and their corresponding proportions (reversed)
+factor_levels <- c("<50", "50-69", "70-79", "80+")
+proportions <- rev(c(0.4, 0.3, 0.2, 0.1))
+
+# Loop through each age.factor level
+for (i in seq_along(factor_levels)) {
+  factor_level <- factor_levels[i]
+  proportion <- proportions[i]
+
+  # Calculate the number of deaths for the current factor level
+  deaths_for_level <- round(proportion * sum(dummy_data$age.factor == factor_level))
+
+  # Generate random indices for deaths for the current factor level
+  death_indices <- sample(which(dummy_data$age.factor == factor_level), size = deaths_for_level)
+
+  # Assign deaths to the selected indices
+  dummy_data$death[death_indices] <- "yes"
+}
+
+# Calculate the count of individuals by age.factor and death
+count_data <- dummy_data %>% count(age.factor, death)
+
+# Calculate the total count of individuals by age.factor
+total_count <- dummy_data %>% group_by(age.factor) %>% summarise(total = n())
+
+# Join the count_data and total_count data frames
+result_data <- count_data %>% left_join(total_count, by = "age.factor")
+
+# Calculate the percentage died for each combination
+result_data <- result_data %>%
+  mutate(percent_died = (n / total) * 100)
+```
+
+```{r Bringing causes of death to realistic proportions with covid-19 at forty five precent, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+
+#Set the seed for reproducibility
+set.seed(456)
+
+# Calculate the number of "U07" entries based on the desired percentage
+total_rows <- nrow(dummy_data)
+desired_u07_rows <- round(0.45 * total_rows)
+
+# Create a vector of indices for "U07" entries
+u07_indices <- sample(1:total_rows, size = desired_u07_rows)
+
+# Set "U07" for the selected indices
+dummy_data$cause_of_death[u07_indices] <- "U07"
+
+causes_of_death <- dummy_data %>% count(cause_of_death)
+```
+
+```{r Bringing causes of death to realistic proportions with flu and pneumonia  at twenty precent, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+# Set the seed for reproducibility
+set.seed(456)
+
+# List of codes you want to populate along with their desired percentages
+desired_entries <- list(
+  list(code = "U07", percentage = 45),
+  list(code = "J44", percentage = 13),
+  list(code = "F03", percentage = 10),
+  list(code = "F04", percentage = 10)
+)
+
+# Calculate the number of desired entries based on percentages
+total_rows <- nrow(dummy_data)
+desired_rows_per_code <- sapply(desired_entries, function(entry) {
+  round(entry$percentage / 100 * total_rows)
+})
+
+# Create a vector of indices for "U07" entries
+u07_indices <- sample(1:total_rows, size = desired_rows_per_code[[1]])
+
+# Loop through the remaining desired entries and set the codes for the selected indices
+for (i in 2:length(desired_entries)) {
+  entry <- desired_entries[[i]]
+  desired_indices <- sample(setdiff(1:total_rows, u07_indices), size = desired_rows_per_code[i])
+  dummy_data$cause_of_death[desired_indices] <- entry$code
+}
+
+```
+
+```{r redistributing NAs for cause of death, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+# Count the non-NA causes of death
+non_na_counts <- dummy_data %>%
+  filter(!is.na(cause_of_death)) %>%
+  count(cause_of_death)
+
+# Calculate the number of NAs to distribute equally
+num_na <- sum(is.na(dummy_data$cause_of_death))
+num_non_na_causes <- nrow(non_na_counts)
+na_distribution <- rep(num_na %/% num_non_na_causes, num_non_na_causes)
+
+# Identify the causes of death to distribute the NAs to
+non_na_causes <- non_na_counts$cause_of_death
+
+# Create a vector of indices for the NAs and shuffle them
+na_indices <- which(is.na(dummy_data$cause_of_death))
+shuffled_na_indices <- sample(na_indices)
+
+# Initialize variables for tracking distribution
+i <- 1
+
+# Distribute NAs equally among causes of death
+for (index in shuffled_na_indices) {
+  current_cause <- non_na_causes[i]
+  dummy_data$cause_of_death[index] <- current_cause
+  i <- i + 1
+  if (i > length(non_na_causes)) {
+    i <- 1
+  }
+}
+
+```
+
+```{r redistributing NAs for cause of readmission, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+# Count the non-NA causes of readmission
+non_na_counts <- dummy_data %>%
+  filter(!is.na(cause_of_readmission)) %>%
+  count(cause_of_readmission)
+
+# Calculate the number of NAs to distribute equally
+num_na <- sum(is.na(dummy_data$cause_of_readmission))
+num_non_na_causes <- nrow(non_na_counts)
+na_distribution <- rep(num_na %/% num_non_na_causes, num_non_na_causes)
+
+# Identify the causes of readmission to distribute the NAs to
+non_na_causes <- non_na_counts$cause_of_readmission
+
+# Create a vector of indices for the NAs and shuffle them
+na_indices <- which(is.na(dummy_data$cause_of_readmission))
+shuffled_na_indices <- sample(na_indices)
+
+# Initialize variables for tracking distribution
+i <- 1
+
+# Distribute NAs equally among causes of readmission
+for (index in shuffled_na_indices) {
+  current_cause <- non_na_causes[i]
+  dummy_data$cause_of_readmission[index] <- current_cause
+  i <- i + 1
+  if (i > length(non_na_causes)) {
+    i <- 1
+  }
+}
+
+
+causes_of_death <- dummy_data %>% count(cause_of_death)
+
+causes_of_readmission <- dummy_data %>% count(cause_of_readmission)
+```
+
+```{r fetching causes of death and adding in covid chapter u again, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+
+dummy_data <- dummy_data %>% select(-`cause of death chapter`)
+dummy_data <- dummy_data %>% select(-`cause of readmission chapter`)
+
+#Get chapters for causes of death #
+
+chapters <- icd10cm2019 %>% select(three_digit, chapter,major)
+
+chapters <- chapters[!duplicated(chapters$three_digit), ]
+
+chapters$three_digit <- factor(chapters$three_digit, levels = unique(chapters$three_digit))
+
+class(chapters$three_digit)
+
+dummy_data <- left_join(dummy_data, chapters, by = c("cause_of_death"="three_digit"))
+
+dummy_data <- dummy_data %>% dplyr::rename("cause of death chapter" = "chapter")
+
+dummy_data <- dummy_data %>% dplyr::rename("cause of death desc" = "major")
+
+dummy_data$`cause of death chapter` <- as.character(dummy_data$`cause of death chapter`)
+
+dummy_data$`cause of death chapter`[dummy_data$cause_of_death == "U07"] <- "COVID-19"
+
+dummy_data$`cause of death desc` <- as.character(dummy_data$`cause of death desc`)
+
+dummy_data$`cause of death desc`[dummy_data$cause_of_death == "U07"] <- "COVID-19"
+```
+
+```{r fetching causes of readmission and adding in covid chapter u again, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+#Get chapters for causes of readmission#
+
+dummy_data <- left_join(dummy_data, chapters, by = c("cause_of_readmission"="three_digit"))
+
+dummy_data <- dummy_data %>% dplyr::rename("cause of readmission chapter" = "chapter")
+
+dummy_data <- dummy_data %>% dplyr::rename("cause of readmission desc" = "major")
+
+
+dummy_data$`cause of readmission chapter` <- as.character(dummy_data$`cause of readmission chapter`)
+
+dummy_data$`cause of readmission chapter`[dummy_data$cause_of_readmission == "U07"] <- "COVID-19"
+
+dummy_data$`cause of readmission desc` <- as.character(dummy_data$`cause of readmission desc`)
+
+dummy_data$`cause of readmission desc`[dummy_data$cause_of_readmission == "U07"] <- "COVID-19"
+
+death_cause_list <- dummy_data %>% count(`cause of death chapter`)
+
+readmission_cause_list <- dummy_data %>% count(`cause of readmission chapter`)
+
+yes_no_columns <- c("hypertension_mhyn", "chrincard", "malnutrition_mhyn", 
+                    "dehydration_vsorres", "diabetes_type_mhyn", "alt_conscious",
+                    "hypoxic_target", "o2_rx", "diabetes_combined", "infiltrates_faorres", "dialysis")
+
+dummy_data <- dummy_data %>%
+  mutate(across(all_of(yes_no_columns), 
+                ~ factor(., levels = c("Yes", "No")) %>% relevel(ref = "No")))
+
+# Set "0" as the reference level for no_comorbid
+dummy_data$no_comorbid <- factor(dummy_data$no_comorbid, levels = c("0", "1", "2", ">2")) %>% relevel(ref = "0")
+
+# Set "White" as the reference level for ethnicity_4levels
+dummy_data$ethnicity_4levels <- factor(dummy_data$ethnicity_4levels, levels = ethnicity_levels) %>% relevel(ref = "White")
+
+fwrite(dummy_data,"dummy_data_complete.csv")
+
+# * Descriptive statistics,obtaining the rates of death and the rates of readmission in the dummy patient dataset. 
+# 
+# * The top causes of readmission and death respectively, by ICD10 code.
+# 
+# * Kaplan Meier plots to visualise the survival distribution of the patient population, identify differences between groups, and assess the impact of various factors on patient outcomes. 
+# 
+# * Cumulative Incidence plots to assess the risk of various outcomes in the patient dataset, visualising competing events.
+# 
+# * Cox regression readmission risk models to assess the relative hazards associated with specific variables, and to identify variables that significantly influence patient survival. 
+```
