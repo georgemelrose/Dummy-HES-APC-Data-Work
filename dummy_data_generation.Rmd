@@ -8,7 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-pacman::p_load(tidyverse, icd,knitr,
+pacman::p_load(knitr,tidyverse,ICD10gm,icd,knitr,
                kableExtra,finalfit,lubridate,data.table,
                janitor,flextable,survival,survminer,cmprsk,
                rmdHelpers)
@@ -129,7 +129,8 @@ dummy_data %>% count(readmission)
 ```
 
 ```{r fetching causes of death and readmission, warning=FALSE, message=FALSE,include = FALSE, echo = FALSE}
-icd10cm2019 <- as.data.frame(icd10cm2019 )
+icd10cm2019 <- as.data.frame(icd10cm2019)
+
 # Combine the 3-digit ICD10 chapters and add "U07"
 icd10_3_digit_chapters <- as.vector(unique(icd10cm2019$three_digit))
 icd10_3_digit_chapters <- c(icd10_3_digit_chapters, "U07")
@@ -184,10 +185,10 @@ dummy_data$`cause of readmission chapter`[dummy_data$cause_of_readmission == "U0
 
 ```
 
-```{r Bringing deaths down to more realistic level of eleven percent, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+```{r Bringing deaths to Ramzi UK level of around twelve percent, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
 # Calculate the number of "Yes" entries based on the desired percentage
 total_rows <- nrow(dummy_data)
-desired_Yes_rows <- round(0.11 * total_rows)
+desired_Yes_rows <- round(0.118 * total_rows)
 
 # Create a vector of indices for "Yes" entries
 Yes_indices <- sample(1:total_rows, size = desired_Yes_rows)
@@ -203,8 +204,35 @@ dummy_data$death[Yes_indices] <- "Yes"
 # # Generate date_of_death for "Yes" entries
 dummy_data$date_of_death <- ifelse(dummy_data$death == "Yes", as.Date("2020-03-01") + dummy_data$days_until_death - 1, NA)
 
+# Add R code to ensure ~80% of deaths have a 'days_until_death' of within 90 days
+Yes_indices_within_90 <- Yes_indices[1:round(length(Yes_indices) * 0.8)]
+dummy_data$days_until_death[Yes_indices_within_90] <- sample(1:90, length(Yes_indices_within_90), replace = TRUE)
+```
 
 
+```{r Bringing readmissions to Ramzi UK level of around thirteen and a half percent, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+# Calculate the number of "Yes" entries based on the desired percentage
+total_rows <- nrow(dummy_data)
+desired_Yes_rows <- round(0.135 * total_rows)
+
+# Create a vector of indices for "Yes" entries
+Yes_indices <- sample(1:total_rows, size = desired_Yes_rows)
+
+# # Generate days_until_death for all rows
+dummy_data$days_until_readmission <- NA_integer_
+dummy_data$days_until_readmission[Yes_indices] <- sample(1:730, length(Yes_indices), replace = TRUE)
+
+# # Update the readmission column
+dummy_data$readmission <- "No"
+dummy_data$readmission[Yes_indices] <- "Yes"
+
+# # Generate date_of_readmission for "Yes" entries
+dummy_data$date_of_readmission <- ifelse(dummy_data$readmission== "Yes", as.Date("2020-03-01") + dummy_data$days_until_readmission - 1, NA)
+
+
+# Add R code to ensure ~60% of readmissions have a 'days_until_death' of within 90 days
+Yes_indices_within_90 <- Yes_indices[1:round(length(Yes_indices) * 0.6)]
+dummy_data$days_until_readmission[Yes_indices_within_90] <- sample(1:90, length(Yes_indices_within_90), replace = TRUE)
 ```
 
 ```{r Bringing causes of readmission to realistic proportions with covid-19 at forty precent, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
@@ -225,8 +253,7 @@ dummy_data$cause_of_readmission[u07_indices] <- "U07"
 causes_of_readmission <- dummy_data %>% count(cause_of_readmission)
 ```
 
-```{r Bringing causes of readmissiont, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
-# 
+```{r Bringing causes of readmission, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
 # # Set the seed for reproducibility
 set.seed(456)
 
@@ -371,7 +398,7 @@ causes_of_death <- dummy_data %>% count(cause_of_death)
 # Set the seed for reproducibility
 set.seed(456)
 
-# List of codes you want to populate along with their desired percentages
+# List of codes to populate along with their  percentages
 desired_entries <- list(
   list(code = "U07", percentage = 45),
   list(code = "J44", percentage = 13),
@@ -379,7 +406,7 @@ desired_entries <- list(
   list(code = "F04", percentage = 10)
 )
 
-# Calculate the number of desired entries based on percentages
+# Calculate the number of entries based on percentages
 total_rows <- nrow(dummy_data)
 desired_rows_per_code <- sapply(desired_entries, function(entry) {
   round(entry$percentage / 100 * total_rows)
@@ -532,6 +559,8 @@ dummy_data$no_comorbid <- factor(dummy_data$no_comorbid, levels = c("0", "1", "2
 
 # Set "White" as the reference level for ethnicity_4levels
 dummy_data$ethnicity_4levels <- factor(dummy_data$ethnicity_4levels, levels = ethnicity_levels) %>% relevel(ref = "White")
+
+dummy_data$date_of_death <- as.Date(dummy_data$date_of_death)
 
 fwrite(dummy_data,"dummy_data_complete.csv")
 

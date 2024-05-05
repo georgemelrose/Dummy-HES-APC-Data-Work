@@ -67,7 +67,7 @@ nrow(dead_before_readmission90)
 
 nrow(dead)
 
-# number of readmissions within 90 days
+# number of deaths within 90 days
 
 dead_before_90 <- dead %>%
   filter(
@@ -104,7 +104,7 @@ top2 <- top %>%
 
 top2 <-  top2  %>% mutate(Proportion = paste0(Proportion, "%")) %>% mutate(`Cumulative Proportion` = paste0(`Cumulative Proportion`, "%"))
 
-top2$`Cumulative Proportion` <- gsub("199.86%", "", as.character(top2$`Cumulative Proportion` ))
+top2$`Cumulative Proportion` <- gsub("200%", "", as.character(top2$`Cumulative Proportion` ))
 
 p <- flextable(top2) 
 
@@ -138,7 +138,7 @@ top2 <- top %>%
 
 top2 <-  top2  %>% mutate(Proportion = paste0(Proportion, "%")) %>% mutate(`Cumulative Proportion` = paste0(`Cumulative Proportion`, "%"))
 
-top2$`Cumulative Proportion` <- gsub("200.12%", "", as.character(top2$`Cumulative Proportion` ))
+top2$`Cumulative Proportion` <- gsub("200.22%", "", as.character(top2$`Cumulative Proportion` ))
 
 p <- flextable(top2) 
 
@@ -184,7 +184,7 @@ fit_death <- survfit(Surv(dummy_data$follow_up_time, dummy_data$all_deaths) ~ 1,
 
 ggsurvplot(fit_death,
            xlim = c(0, 90),
-           ylim = c(0.985, 1),
+           ylim = c(0.9, 1),
            break.time.by = 10,
            xlab = "Days since discharge",
            ylab = "Survival Probability",
@@ -205,7 +205,7 @@ fit_death_sex <- survfit(Surv(dummy_data$follow_up_time , dummy_data$all_deaths)
 
 ggsurvplot(fit_death_sex,
            xlim = c(0, 90),
-           ylim = c(0.985,1),
+           ylim = c(0.9,1),
            break.time.by = 10,
            xlab = "Days since discharge",
            ylab = "Survival Probability",
@@ -347,8 +347,9 @@ dummy_data$readmission_time <- dummy_data$readmission_time %>% replace_na(2000)
 dependent = "Surv(days_until_readmission, readm_within_90 )"
 dependent_label = "Post-discharge readmission"
 
-vars_multi = c("age.factor","sex","chrincard", "diabetes_combined","dialysis","ethnicity_4levels","hypertension_mhyn",
-               "no_comorbid")
+vars_multi = c("age.factor","sex","chrincard", "diabetes_combined","dialysis",
+               "ethnicity_4levels","hypertension_mhyn",
+               "no_comorbid","alt_conscious")
 
 
 tab = dummy_data %>% 
@@ -373,6 +374,144 @@ mykable = function(x){
 #   rename("  " = all) %>%
 #   mykable()
 ```
+
+
+## Cox-proportional Hazards Regression - All Causes of Readmission within 90 Days HR Plot {.flexbox .vcenter .smaller}
+
+```{r, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=10,fig.height=5,fig.align = 'center'}
+
+dummy_data %>% 
+  hr_plot(dependent, vars_multi,
+          breaks = c(0.03,0.1,0.3,1,3,10),
+          remove_ref = TRUE,
+          column_space = c(-1,0,0.75),
+          table_text_size = 3,
+          title_text_size = 16,
+          dependent_label = dependent_label) 
+
+tab[[2]] %>% knitr::kable()
+
+```
+
+
+
+
+```{r, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.align = 'center',fig.width=11,fig.height=5}
+
+dummy_data$readm_num <- ifelse(dummy_data$readmission == "Yes", "1", "0")
+
+dummy_data$readm_num <- as.numeric(dummy_data$readm_num)
+
+dummy_data$readm_num <- dummy_data$readm_num %>% replace_na(0)
+
+dummy_data$readmission_time <- dummy_data$readmission_time %>% replace_na(2000)
+
+
+
+dependent = "Surv(days_until_readmission, readm_num )"
+dependent_label = "Post-discharge readmission"
+
+vars_multi = c("age.factor","sex","chrincard", "diabetes_combined","dialysis",
+               "ethnicity_4levels","hypertension_mhyn",
+               "no_comorbid","alt_conscious")
+
+
+tab = dummy_data %>% 
+  finalfit(dependent, vars_multi, metrics = TRUE, add_dependent_label = FALSE)
+
+mykable = function(x){
+    knitr::kable(x, row.names = FALSE, align = c("l", "l", "r", "r", "r", "r", "r", "r", "r"))
+}
+
+# Your data manipulation and kable code
+# result <- tab[[1]] %>%
+#   rename(!!{{ dependent_label }} := label) %>%
+#   rename(" " = levels) %>%
+#   rename("  " = all)
+
+# Apply mykable to the result
+# mykable(result)
+
+# tab[[1]] %>%
+#   rename({{dependent_label}} := label) %>%
+#   rename(" " = levels) %>%
+#   rename("  " = all) %>%
+#   mykable()
+```
+
+
+## Cox-proportional Hazards Regression - All Causes of Readmission HR Plot {.flexbox .vcenter .smaller}
+
+```{r, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=10,fig.height=5,fig.align = 'center'}
+
+dummy_data %>% 
+  hr_plot(dependent, vars_multi,
+          breaks = c(0.03,0.1,0.3,1,3,10),
+          remove_ref = TRUE,
+          column_space = c(-1,0,0.75),
+          table_text_size = 3,
+          title_text_size = 16,
+          dependent_label = dependent_label) 
+
+tab[[2]] %>% knitr::kable()
+
+```
+
+
+```{r, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.align = 'center',fig.width=11,fig.height=5}
+
+falls_fractures <- c(
+    "W00", "W01", "W02", "W03", "W04", "W05", "W06", "W07", "W08", "W09", "W10", "W11", "W12", "W13", "W14", "W15", 
+    "W16", "W17", "W18", "W19", 
+    "S12", "S13", "S14", "S15", "S22", "S23", "S24", "S32", "S33", "S34", "S42", "S43", "S44", "S52", "S53", "S54", 
+    "S62", "S63", "S64", "S72", "S73", "S74", "S82", "S83", "S84", "S92", "S93", "S94"
+)
+
+
+
+dummy_data$readm_ff <- ifelse(dummy_data$cause_of_readmission %in% falls_fractures, "1", "0")
+
+dummy_data$readm_ff <- as.factor(dummy_data$readm_ff)
+
+dummy_data$readm_ff <- as.numeric(dummy_data$readm_ff)
+
+dummy_data$readm_ff <- dummy_data$readm_ff %>% replace_na(0)
+
+dummy_data$readmission_time <- dummy_data$readmission_time %>% replace_na(2000)
+
+
+
+dependent = "Surv(days_until_readmission, readm_ff)"
+dependent_label = "Post-discharge falls & fracture readmission"
+
+vars_multi = c("age.factor","sex","chrincard", "diabetes_combined","dialysis",
+               "ethnicity_4levels","hypertension_mhyn",
+               "no_comorbid","alt_conscious")
+
+
+tab = dummy_data %>% 
+  finalfit(dependent, vars_multi, metrics = TRUE, add_dependent_label = FALSE)
+
+mykable = function(x){
+    knitr::kable(x, row.names = FALSE, align = c("l", "l", "r", "r", "r", "r", "r", "r", "r"))
+}
+
+# Your data manipulation and kable code
+# result <- tab[[1]] %>%
+#   rename(!!{{ dependent_label }} := label) %>%
+#   rename(" " = levels) %>%
+#   rename("  " = all)
+
+# Apply mykable to the result
+# mykable(result)
+
+# tab[[1]] %>%
+#   rename({{dependent_label}} := label) %>%
+#   rename(" " = levels) %>%
+#   rename("  " = all) %>%
+#   mykable()
+```
+
 
 ## Cox-proportional Hazards Regression - All Causes of Readmission HR Plot {.flexbox .vcenter .smaller}
 
