@@ -185,29 +185,6 @@ dummy_data$`cause of readmission chapter`[dummy_data$cause_of_readmission == "U0
 
 ```
 
-```{r Bringing deaths to Ramzi UK level of around twelve percent, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
-# Calculate the number of "Yes" entries based on the desired percentage
-total_rows <- nrow(dummy_data)
-desired_Yes_rows <- round(0.118 * total_rows)
-
-# Create a vector of indices for "Yes" entries
-Yes_indices <- sample(1:total_rows, size = desired_Yes_rows)
-
-# # Generate days_until_death for all rows
-dummy_data$days_until_death <- NA_integer_
-dummy_data$days_until_death[Yes_indices] <- sample(1:730, length(Yes_indices), replace = TRUE)
-
-# # Update the "death" column
-dummy_data$death <- "No"
-dummy_data$death[Yes_indices] <- "Yes"
-
-# # Generate date_of_death for "Yes" entries
-dummy_data$date_of_death <- ifelse(dummy_data$death == "Yes", as.Date("2020-03-01") + dummy_data$days_until_death - 1, NA)
-
-# Add R code to ensure ~80% of deaths have a 'days_until_death' of within 90 days
-Yes_indices_within_90 <- Yes_indices[1:round(length(Yes_indices) * 0.8)]
-dummy_data$days_until_death[Yes_indices_within_90] <- sample(1:90, length(Yes_indices_within_90), replace = TRUE)
-```
 
 
 ```{r Bringing readmissions to Ramzi UK level of around thirteen and a half percent, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
@@ -230,9 +207,20 @@ dummy_data$readmission[Yes_indices] <- "Yes"
 dummy_data$date_of_readmission <- ifelse(dummy_data$readmission== "Yes", as.Date("2020-03-01") + dummy_data$days_until_readmission - 1, NA)
 
 
-# Add R code to ensure ~60% of readmissions have a 'days_until_death' of within 90 days
+# Add R code to ensure ~60% of readmissions have a 'days_until_readmission' of within 90 days
 Yes_indices_within_90 <- Yes_indices[1:round(length(Yes_indices) * 0.6)]
 dummy_data$days_until_readmission[Yes_indices_within_90] <- sample(1:90, length(Yes_indices_within_90), replace = TRUE)
+
+#Getting rows where readmission equals 0 to ensure 80% of deaths are before readmission
+
+# Filter rows where readmission = 0
+readmission_0_indices <- which(dummy_data$readmission == 0)
+
+# Randomly select 80% of rows with readmission = 0
+readmission_0_indices_within_90 <- sample(readmission_0_indices, size = round(length(readmission_0_indices) * 0.8))
+
+# Update 'days_until_death' for the selected rows
+dummy_data$days_until_death[readmission_0_indices_within_90] <- sample(1:90, length(readmission_0_indices_within_90), replace = TRUE)
 ```
 
 ```{r Bringing causes of readmission to realistic proportions with covid-19 at forty precent, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
@@ -345,7 +333,7 @@ set.seed(123)
 
 # Define the factor levels and their corresponding proportions (reversed)
 factor_levels <- c("<50", "50-69", "70-79", "80+")
-proportions <- rev(c(0.4, 0.3, 0.2, 0.1))
+proportions <- c(0.05, 0.15, 0.25, 0.55)
 
 # Loop through each age.factor level
 for (i in seq_along(factor_levels)) {
@@ -359,7 +347,7 @@ for (i in seq_along(factor_levels)) {
   death_indices <- sample(which(dummy_data$age.factor == factor_level), size = deaths_for_level)
 
   # Assign deaths to the selected indices
-  dummy_data$death[death_indices] <- "yes"
+  dummy_data$death[death_indices] <- "Yes"
 }
 
 # Calculate the count of individuals by age.factor and death
@@ -375,6 +363,33 @@ result_data <- count_data %>% left_join(total_count, by = "age.factor")
 result_data <- result_data %>%
   mutate(percent_died = (n / total) * 100)
 ```
+
+
+```{r Bringing deaths to Ramzi UK level of around twelve percent, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+# Calculate the number of "Yes" entries based on the desired percentage
+total_rows <- nrow(dummy_data)
+desired_Yes_rows <- round(0.118 * total_rows)
+
+# Create a vector of indices for "Yes" entries
+Yes_indices <- sample(1:total_rows, size = desired_Yes_rows)
+
+# # Generate days_until_death for all rows
+dummy_data$days_until_death <- NA_integer_
+dummy_data$days_until_death[Yes_indices] <- sample(1:730, length(Yes_indices), replace = TRUE)
+
+# # Update the "death" column
+dummy_data$death <- "No"
+dummy_data$death[Yes_indices] <- "Yes"
+
+# # Generate date_of_death for "Yes" entries
+dummy_data$date_of_death <- ifelse(dummy_data$death == "Yes", as.Date("2020-03-01") + dummy_data$days_until_death - 1, NA)
+
+# Add R code to ensure ~80% of deaths have a 'days_until_death' of within 90 days
+Yes_indices_within_90 <- Yes_indices[1:round(length(Yes_indices) * 0.8)]
+dummy_data$days_until_death[Yes_indices_within_90] <- sample(1:90, length(Yes_indices_within_90), replace = TRUE)
+```
+
+
 
 ```{r Bringing causes of death to realistic proportions with covid-19 at forty five precent, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
 
@@ -573,4 +588,41 @@ fwrite(dummy_data,"dummy_data_complete.csv")
 # * Cumulative Incidence plots to assess the risk of various outcomes in the patient dataset, visualising competing events.
 # 
 # * Cox regression readmission risk models to assess the relative hazards associated with specific variables, and to identify variables that significantly influence patient survival. 
+```
+
+```{r Check if any dates of readmission are after a date of death, message=FALSE,warning=FALSE,include = FALSE, echo = FALSE}
+#Check if any dates of readmission are after a date of death
+has_invalid_dates <- any(
+  !is.na(dummy_data$date_of_death) &
+  !is.na(dummy_data$date_of_first_readmission) &
+  dummy_data$date_of_first_readmission > dummy_data$date_of_death
+)
+
+if (has_invalid_dates) {
+  cat("There are dates of readmission after dates of death.\n")
+} else {
+  cat("All dates of readmission are before or on dates of death.\n")
+}
+
+# Replace dates of readmission that are after dates of death with dates of death
+dummy_data$date_of_first_readmission<- ifelse(
+  !is.na(dummy_data$date_of_death) &
+  !is.na(dummy_data$date_of_first_readmission) &
+  dummy_data$date_of_first_readmission > dummy_data$date_of_death,
+  dummy_data$date_of_death,
+  dummy_data$date_of_first_readmission
+)
+
+#Check if any dates of readmission are after a date of death
+has_invalid_dates <- any(
+  !is.na(dummy_data$date_of_death) &
+  !is.na(dummy_data$date_of_first_readmission) &
+  dummy_data$date_of_first_readmission > dummy_data$date_of_death
+)
+
+if (has_invalid_dates) {
+  cat("There are dates of readmission after dates of death.\n")
+} else {
+  cat("All dates of readmission are before or on dates of death.\n")
+}
 ```

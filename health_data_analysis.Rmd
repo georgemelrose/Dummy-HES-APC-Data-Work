@@ -147,6 +147,7 @@ p <- bold(p, bold = TRUE, part = "header")
 autofit(p)
 ```
 
+
 ## Full Cohort Survival Probability for all Deaths {.flexbox .vcenter}
 
 ```{r restating factor variables, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
@@ -217,12 +218,134 @@ ggsurvplot(fit_death_sex,
            risk.table.y.text = FALSE,
            conf.int = TRUE,
            legend.labs = c("Male", "Female"), cumcensor = TRUE,
-           pval.coord = c(0, 0.98875), pval.method = TRUE, pval.method.coord = c(0, 0.99), conf.int.style = "step")
+           pval.coord = c(0, 0.96), pval.method = TRUE, pval.method.coord = c(0, 0.98), conf.int.style = "step")
 ```
+
+```{r diabetes km curve, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=11.5,fig.height=5.3,fig.align = 'center'}
+
+fit_death_diabetes <- survfit(Surv(dummy_data$follow_up_time , dummy_data$all_deaths) ~ diabetes_type_mhyn , data = dummy_data)
+
+ggsurvplot(fit_death_diabetes,
+           xlim = c(0, 90),
+           ylim = c(0.9,1),
+           break.time.by = 10,
+           xlab = "Days since discharge",
+           ylab = "Survival Probability",
+           pval = TRUE,
+           ggtheme = theme_light(),
+           risk.table = TRUE,
+           risk.table.y.text.col = T,
+           risk.table.height = 0.2,
+           risk.table.y.text = FALSE,
+           conf.int = TRUE,
+           legend.labs = c("No","Yes"), cumcensor = TRUE,
+           pval.coord = c(0, 0.96), pval.method = TRUE, pval.method.coord = c(0, 0.98), conf.int.style = "step")
+```
+
+## Cumulative Incidence of Deaths
+```{r, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.width=10.75,fig.height=5.5,fig.align = 'center'}
+cohort <- dummy_data 
+
+cohort$status_1 <- NA
+
+cohort <- cohort %>% mutate(status_1 =  case_when(
+  death == "Yes"  ~ "1",
+  TRUE ~ "0" ) )
+
+cohort <- cohort %>% mutate(status_2 =  case_when(
+  status_1 == 1  ~ "Death",
+   TRUE ~ "NA" ) )
+
+
+ci_fit <- cuminc(cohort$follow_up_time , cohort$status_1)
+
+ciplot <- ci_fit %>% list_modify("Tests" = NULL) %>%
+  map_df(`[`, c("time", "est", "var"), .id = "id") %>%
+   mutate(Death = recode(
+    id,
+    "1 1" = "Death"))  
+
+ggplot(ciplot, aes(x = time, y = est, color = Death)) +
+  geom_step(lwd = 1.2) +
+  ylim(c(0,0.1)) +
+  coord_cartesian(xlim = c(0,90))  +
+  scale_x_continuous(breaks = seq(0,90,10)) +
+  theme_classic() + theme(plot.title = element_text(size = 14),
+                          legend.title = element_blank(),
+                          legend.position = "bottom") +
+  labs(x = "Days",
+       y = "Cumulative incidence",
+       title = "CI Plot of Deaths across Whole Cohort")  
+```
+
+```{r}
+ci_sex <- cuminc(ftime = cohort$follow_up_time , fstatus = cohort$status_1, group= cohort$sex)
+
+ciplot <- ci_sex %>% list_modify("Tests" = NULL) %>%
+  map_df(`[`, c("time", "est", "var"), .id = "id") %>%
+  mutate(id = recode(
+    id,
+    "Male 1" = "Male:Deaths",
+    "Female 1" = "Female:Deaths")
+  ) %>%
+  separate(id, c("Sex","Event"),":")
+  
+plot <- ggplot(ciplot, aes(x = time, y = est, color = Sex)) +
+  geom_step(lwd = 1.2, aes(linetype = Event)) +
+  ylim(c(0,0.12)) +
+  xlim (c(0, 90)) +
+  theme_classic() + theme(plot.title = element_text(size = 14),
+                          legend.title = element_blank(),
+                          legend.position = "bottom") +
+  labs(x = "Days",
+       y = "Cumulative incidence",
+       title = "CI Plot of Deaths by Sex") +
+  annotate("text", x = 0, y = 0.04, hjust = 0,
+           label = paste0(
+             "Deaths p-value = ",
+             ifelse(ci_sex$Tests[1,2] < .001,
+                    "<.001",
+                    round(ci_sex$Tests[1,2], 3)))) 
+
+fit <- survfit(Surv(follow_up_time, ifelse(status_1 != 0,1,0)) ~ sex, data = cohort)
+
+num <- ggsurvplot(
+    fit = fit,
+    risk.table = TRUE,
+    risk.table.y.text = FALSE,
+    risk.table.fontsize = 3.2,
+    tables.theme = theme_survminer(font.main = 10),
+    title = "Test",
+    xlim = c(0, 90),
+    break.time.by = 10
+  )
+
+# cause_specific = surv_fit(
+#     Surv(follow_up_time, ifelse(status_1 == 1, 1, 0)) ~ sex,
+#     data = cohort
+#   )
+# 
+# ci_tab_cause_specific = ggsurvplot(
+#     fit = cause_specific,
+#     risk.table = TRUE,
+#     cumevents = TRUE,
+#     risk.table.y.text = FALSE,
+#     risk.table.fontsize = 3.2,
+#     tables.theme = theme_survminer(font.main = 10),
+#     title = "Test",
+#     xlim =  c(0, 90),
+#     break.time.by = 10
+#   )
+
+cowplot::plot_grid(plot, num$table + theme_cleantable(),
+                   nrow = 2, rel_heights = c(4,1),
+                   align = "v", axis = "b")
+```
+
 
 ## Cumulative Incidence of Readmissions and Deaths
 
-```{r, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.width=10.75,fig.height=5.5,fig.align = 'center'}
+```{r Setting up CI parameters, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.width=10.75,fig.height=5.5,fig.align = 'center'}
 cohort <- dummy_data 
 
 cohort$status_1 <- NA
@@ -258,7 +381,7 @@ ggplot(ciplot, aes(x = time, y = est, color = Readmission)) +
        title = "CI Plot of Readmissions & Deaths across Whole Cohort")  
 ```
 
-```{r, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=10.7,fig.height=5.3,fig.align = 'center'}
+```{r By sex part two, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=10.7,fig.height=5.3,fig.align = 'center'}
 ci_sex <- cuminc(ftime = cohort$follow_up_time , fstatus = cohort$status_1, group= cohort$sex)
 
 ciplot <- ci_sex %>% list_modify("Tests" = NULL) %>%
@@ -330,6 +453,153 @@ cowplot::plot_grid(plot, num$table + theme_cleantable(),
                    align = "v", axis = "b")
 ```
 
+
+```{r By hypertension, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=10.7,fig.height=5.3,fig.align = 'center'}
+ci_hypertension <- cuminc(ftime = cohort$follow_up_time , fstatus = cohort$status_1, group= cohort$hypertension_mhyn)
+
+ciplot <- ci_hypertension  %>% list_modify("Tests" = NULL) %>%
+  map_df(`[`, c("time", "est", "var"), .id = "id") %>%
+  mutate(id = recode(
+    id,
+    "No 2" = "No:Deaths",
+    "Yes 2" = "Yes:Deaths",
+    "No 1" = "No:Readmissions",
+    "Yes 1" = "Yes:Readmissions")
+  ) %>%
+  separate(id, c("Hypertension","Event"),":")
+  
+plot <- ggplot(ciplot, aes(x = time, y = est, color = Hypertension)) +
+  geom_step(lwd = 1.2, aes(linetype = Event)) +
+  ylim(c(0,0.12)) +
+  xlim (c(0, 90)) +
+  theme_classic() + theme(plot.title = element_text(size = 14),
+                          legend.title = element_blank(),
+                          legend.position = "bottom") +
+  labs(x = "Days",
+       y = "Cumulative incidence",
+       title = "CI Plot of Readmissions & Deaths by Hypertension (Yes/No)") +
+  annotate("text", x = 0, y = 0.04, hjust = 0,
+           label = paste0(
+             "Deaths p-value = ",
+             ifelse(ci_hypertension$Tests[1,2] < .001,
+                    "<.001",
+                    round(ci_hypertension$Tests[1,2], 3)))) +
+  annotate("text", x = 0, y = 0.06, hjust = 0,
+           label = paste0(
+             "Readmissions p-value = ",
+             ifelse(ci_hypertension$Tests[2,2] < .001,
+                    "<.001",
+                    round(ci_hypertension$Tests[2,2], 3))))
+
+fit <- survfit(Surv(follow_up_time, ifelse(status_1 != 0,1,0)) ~ hypertension_mhyn, data = cohort)
+
+num <- ggsurvplot(
+    fit = fit,
+    risk.table = TRUE,
+    risk.table.y.text = FALSE,
+    risk.table.fontsize = 3.2,
+    tables.theme = theme_survminer(font.main = 10),
+    title = "Test",
+    xlim = c(0, 90),
+    break.time.by = 10
+  )
+
+# cause_specific = surv_fit(
+#     Surv(follow_up_time, ifelse(status_1 == 1, 1, 0)) ~ sex,
+#     data = cohort
+#   )
+# 
+# ci_tab_cause_specific = ggsurvplot(
+#     fit = cause_specific,
+#     risk.table = TRUE,
+#     cumevents = TRUE,
+#     risk.table.y.text = FALSE,
+#     risk.table.fontsize = 3.2,
+#     tables.theme = theme_survminer(font.main = 10),
+#     title = "Test",
+#     xlim =  c(0, 90),
+#     break.time.by = 10
+#   )
+
+cowplot::plot_grid(plot, num$table + theme_cleantable(),
+                   nrow = 2, rel_heights = c(4,1),
+                   align = "v", axis = "b")
+```
+```{r By Age, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=10.7,fig.height=5.3,fig.align = 'center'}
+ci_age <- cuminc(ftime = cohort$follow_up_time , fstatus = cohort$status_1, group= cohort$age.factor)
+
+ciplot <- ci_age  %>% list_modify("Tests" = NULL) %>%
+  map_df(`[`, c("time", "est", "var"), .id = "id") %>%
+  mutate(id = recode(
+    id,
+    "<50 2" = "<50:Deaths",
+    "50-69 2" = "50-69:Deaths",
+    "70-79 2" = "70-79:Deaths",
+    "80+ 2" = "80+:Deaths",
+    "<50 1" = "<50:Readmissions",
+    "50-69 1" = "50-69:Readmissions",
+    "70-79 1" = "70-79:Readmissions",
+    "80+ 1" = "80+:Readmissions",)
+  ) %>%
+  separate(id, c("Age","Event"),":")
+  
+plot <- ggplot(ciplot, aes(x = time, y = est, color = Age)) +
+  geom_step(lwd = 1.2, aes(linetype = Event)) +
+  ylim(c(0,0.09)) +
+  xlim (c(0, 90)) +
+  theme_classic() + theme(plot.title = element_text(size = 14),
+                          legend.title = element_blank(),
+                          legend.position = "bottom") +
+  labs(x = "Days",
+       y = "Cumulative incidence",
+       title = "CI Plot of Readmissions & Deaths by Age") +
+  annotate("text", x = 0, y = 0.04, hjust = 0,
+           label = paste0(
+             "Deaths p-value = ",
+             ifelse(ci_age$Tests[1,2] < .001,
+                    "<.001",
+                    round(ci_age$Tests[1,2], 3)))) +
+  annotate("text", x = 0, y = 0.06, hjust = 0,
+           label = paste0(
+             "Readmissions p-value = ",
+             ifelse(ci_age$Tests[2,2] < .001,
+                    "<.001",
+                    round(ci_age$Tests[2,2], 3))))
+
+fit <- survfit(Surv(follow_up_time, ifelse(status_1 != 0,1,0)) ~ age.factor, data = cohort)
+
+num <- ggsurvplot(
+    fit = fit,
+    risk.table = TRUE,
+    risk.table.y.text = FALSE,
+    risk.table.fontsize = 3.2,
+    tables.theme = theme_survminer(font.main = 10),
+    title = "Test",
+    xlim = c(0, 90),
+    break.time.by = 10
+  )
+
+# cause_specific = surv_fit(
+#     Surv(follow_up_time, ifelse(status_1 == 1, 1, 0)) ~ sex,
+#     data = cohort
+#   )
+# 
+# ci_tab_cause_specific = ggsurvplot(
+#     fit = cause_specific,
+#     risk.table = TRUE,
+#     cumevents = TRUE,
+#     risk.table.y.text = FALSE,
+#     risk.table.fontsize = 3.2,
+#     tables.theme = theme_survminer(font.main = 10),
+#     title = "Test",
+#     xlim =  c(0, 90),
+#     break.time.by = 10
+#   )
+
+cowplot::plot_grid(plot, num$table + theme_cleantable(),
+                   nrow = 2, rel_heights = c(4,1),
+                   align = "v", axis = "b")
+```
 
 
 ```{r, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.align = 'center',fig.width=11,fig.height=5}
