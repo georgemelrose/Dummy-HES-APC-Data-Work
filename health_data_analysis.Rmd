@@ -47,7 +47,7 @@ nrow(readm_before_90)
 
 ```{r deaths before readmission stats, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
 dead <- dummy_data %>% filter(death == "Yes") 
-
+nrow(dead)
 dead_before_readmission <- dead %>% filter(is.na(days_until_readmission))
 
 nrow(dead_before_readmission)
@@ -151,21 +151,21 @@ autofit(p)
 ## Full Cohort Survival Probability for all Deaths {.flexbox .vcenter}
 
 ```{r restating factor variables, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
-yes_no_columns <- c("hypertension_mhyn", "chrincard", "malnutrition_mhyn", 
-                    "dehydration_vsorres", "diabetes_type_mhyn", "alt_conscious",
-                    "hypoxic_target", "o2_rx", "diabetes_combined", "infiltrates_faorres", "dialysis")
-
-dummy_data <- dummy_data %>%
-  mutate(across(all_of(yes_no_columns), 
-                ~ factor(., levels = c("Yes", "No")) %>% relevel(ref = "No")))
-
-# Set "0" as the reference level for no_comorbid
-dummy_data$no_comorbid <- factor(dummy_data$no_comorbid, levels = c("0", "1", "2", ">2")) %>% relevel(ref = "0")
-
-ethnicity_levels <- c("White", "South Asian", "East Asian", "Black", "Other Ethnic Minority")
-
-# Set "White" as the reference level for ethnicity_4levels
-dummy_data$ethnicity_4levels <- factor(dummy_data$ethnicity_4levels, levels = ethnicity_levels) %>% relevel(ref = "White")
+# yes_no_columns <- c("hypertension_mhyn", "chrincard", "malnutrition_mhyn", 
+#                     "dehydration_vsorres", "diabetes_type_mhyn", "alt_conscious",
+#                     "hypoxic_target", "o2_rx", "diabetes_combined", "infiltrates_faorres", "dialysis")
+# 
+# dummy_data <- dummy_data %>%
+#   mutate(across(all_of(yes_no_columns), 
+#                 ~ factor(., levels = c("Yes", "No")) %>% relevel(ref = "No")))
+# 
+# # Set "0" as the reference level for no_comorbid
+# dummy_data$no_comorbid <- factor(dummy_data$no_comorbid, levels = c("0", "1", "2", ">2")) %>% relevel(ref = "0")
+# 
+# ethnicity_levels <- c("White", "South Asian", "East Asian", "Black", "Other Ethnic Minority")
+# 
+# # Set "White" as the reference level for ethnicity_4levels
+# dummy_data$ethnicity_4levels <- factor(dummy_data$ethnicity_4levels, levels = ethnicity_levels) %>% relevel(ref = "White")
 ```
 
 
