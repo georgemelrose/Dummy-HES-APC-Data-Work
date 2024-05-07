@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 pacman::p_load(knitr,tidyverse,ICD10gm,icd,knitr,
                kableExtra,finalfit,lubridate,data.table,
                janitor,flextable,survival,survminer,cmprsk,
-               rmdHelpers)
+               rmdHelpers, IMD)
 
 rm(list = ls())
 
@@ -326,43 +326,7 @@ dummy_data %>% count(age.factor)
 dummy_data %>% count(age.factor, death)
 ```
 
-```{r ensuring deaths are more realistically distributed amongst age factor groups,  warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
 
-# Set the seed for reproducibility
-set.seed(123)
-
-# Define the factor levels and their corresponding proportions (reversed)
-factor_levels <- c("<50", "50-69", "70-79", "80+")
-proportions <- c(0.05, 0.15, 0.25, 0.55)
-
-# Loop through each age.factor level
-for (i in seq_along(factor_levels)) {
-  factor_level <- factor_levels[i]
-  proportion <- proportions[i]
-
-  # Calculate the number of deaths for the current factor level
-  deaths_for_level <- round(proportion * sum(dummy_data$age.factor == factor_level))
-
-  # Generate random indices for deaths for the current factor level
-  death_indices <- sample(which(dummy_data$age.factor == factor_level), size = deaths_for_level)
-
-  # Assign deaths to the selected indices
-  dummy_data$death[death_indices] <- "Yes"
-}
-
-# Calculate the count of individuals by age.factor and death
-count_data <- dummy_data %>% count(age.factor, death)
-
-# Calculate the total count of individuals by age.factor
-total_count <- dummy_data %>% group_by(age.factor) %>% summarise(total = n())
-
-# Join the count_data and total_count data frames
-result_data <- count_data %>% left_join(total_count, by = "age.factor")
-
-# Calculate the percentage died for each combination
-result_data <- result_data %>%
-  mutate(percent_died = (n / total) * 100)
-```
 
 
 ```{r Bringing deaths to Ramzi UK level of around twelve percent, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
@@ -590,6 +554,116 @@ fwrite(dummy_data,"dummy_data_complete.csv")
 # * Cox regression readmission risk models to assess the relative hazards associated with specific variables, and to identify variables that significantly influence patient survival. 
 ```
 
+
+
+```{r ensuring deaths are more realistically distributed amongst age factor and disease groups,  warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+
+# Set the seed for reproducibility
+set.seed(123)
+
+# Define the factor levels and their corresponding proportions (reversed)
+factor_levels <- c("<50", "50-69", "70-79", "80+")
+proportions <- c(0.05, 0.1, 0.15, 0.7)
+
+# Define the proportions for binary variables "chrincard", "diabetes_type_mhyn", and "hypertension_mhyn"
+chrincard_prop <- 0.6  # 60% of deaths for "chrincard" = "Yes"
+diabetes_prop <- 0.55   # 55% of deaths for "diabetes_type_mhyn" = "Yes"
+hypertension_prop <- 0.65  # 65% of deaths for "hypertension_mhyn" = "Yes"
+
+# Initialize a vector to store the number of deaths for each age.factor level
+deaths_by_level <- numeric(length(factor_levels))
+
+# Loop through each age.factor level
+for (i in seq_along(factor_levels)) {
+  factor_level <- factor_levels[i]
+  proportion <- proportions[i]
+
+  # Calculate the number of deaths for the current factor level
+  deaths_for_level <- round(proportion * sum(dummy_data$age.factor == factor_level))
+  deaths_by_level[i] <- deaths_for_level
+}
+
+# Loop through each age.factor level again to adjust deaths based on binary variables
+for (i in seq_along(factor_levels)) {
+  factor_level <- factor_levels[i]
+  deaths_for_level <- deaths_by_level[i]
+
+  # Adjust deaths based on binary variables without altering age.factor proportions
+  chrincard_deaths <- round(chrincard_prop * deaths_for_level)
+  diabetes_deaths <- round(diabetes_prop * deaths_for_level)
+  hypertension_deaths <- round(hypertension_prop * deaths_for_level)
+  
+  # Get random indices for each binary variable
+  chrincard_indices <- sample(which(dummy_data$chrincard == "Yes" & dummy_data$age.factor == factor_level), size = chrincard_deaths)
+  diabetes_indices <- sample(which(dummy_data$diabetes_type_mhyn == "Yes" & dummy_data$age.factor == factor_level), size = diabetes_deaths)
+  hypertension_indices <- sample(which(dummy_data$hypertension_mhyn == "Yes" & dummy_data$age.factor == factor_level), size = hypertension_deaths)
+  
+  # Assign deaths for each binary variable
+  dummy_data$death[chrincard_indices] <- "Yes"
+  dummy_data$death[diabetes_indices] <- "Yes"
+  dummy_data$death[hypertension_indices] <- "Yes"
+}
+
+# Calculate the count of individuals by age.factor and death
+count_data <- dummy_data %>% count(age.factor, death)
+
+# Calculate the total count of individuals by age.factor
+total_count <- dummy_data %>% group_by(age.factor) %>% summarise(total = n())
+
+# Join the count_data and total_count data frames
+result_data <- count_data %>% left_join(total_count, by = "age.factor")
+
+# Calculate the percentage died for each combination
+result_data <- result_data %>%
+  mutate(percent_died = (n / total) * 100)
+
+
+# Calculate the count of individuals by chrincard and death
+count_data <- dummy_data %>% count(chrincard, death)
+
+# Calculate the total count of individuals by chrincard
+total_count <- dummy_data %>% group_by(chrincard) %>% summarise(total = n())
+
+# Join the count_data and total_count data frames
+result_data <- count_data %>% left_join(total_count, by = "chrincard")
+
+# Calculate the percentage died for each combination
+result_data <- result_data %>%
+  mutate(percent_died = (n / total) * 100)
+
+
+# Calculate the count of individuals by hypertension and death
+count_data <- dummy_data %>% count(hypertension_mhyn, death)
+
+# Calculate the total count of individuals by hypertension
+total_count <- dummy_data %>% group_by(hypertension_mhyn) %>% summarise(total = n())
+
+# Join the count_data and total_count data frames
+result_data <- count_data %>% left_join(total_count, by = "hypertension_mhyn")
+
+# Calculate the percentage died for each combination
+result_data <- result_data %>%
+  mutate(percent_died = (n / total) * 100)
+
+
+
+# Calculate the count of individuals by diabetes and death
+count_data <- dummy_data %>% count(diabetes_type_mhyn, death)
+
+# Calculate the total count of individuals by diabetes
+total_count <- dummy_data %>% group_by(diabetes_type_mhyn) %>% summarise(total = n())
+
+# Join the count_data and total_count data frames
+result_data <- count_data %>% left_join(total_count, by = "diabetes_type_mhyn")
+
+# Calculate the percentage died for each combination
+result_data <- result_data %>%
+  mutate(percent_died = (n / total) * 100)
+```
+
+
+
+
 ```{r Check if any dates of readmission are after a date of death, message=FALSE,warning=FALSE,include = FALSE, echo = FALSE}
 #Check if any dates of readmission are after a date of death
 has_invalid_dates <- any(
@@ -625,4 +699,53 @@ if (has_invalid_dates) {
 } else {
   cat("All dates of readmission are before or on dates of death.\n")
 }
+```
+
+```{r}
+
+# Calculate the count of individuals by age.factor and death
+count_data <- dummy_data %>% count(age.factor, death)
+
+# Calculate the total count of individuals by age.factor
+total_count <- dummy_data %>% group_by(age.factor) %>% summarise(total = n())
+
+# Join the count_data and total_count data frames
+result_data <- count_data %>% left_join(total_count, by = "age.factor")
+
+# Calculate the percentage died for each combination
+result_data <- result_data %>%
+  mutate(percent_died = (n / total) * 100)
+
+
+# Calculate the count of individuals by chrincard and death
+count_data <- dummy_data %>% count(chrincard, death)
+
+# Calculate the total count of individuals by chrincard
+total_count <- dummy_data %>% group_by(chrincard) %>% summarise(total = n())
+
+# Join the count_data and total_count data frames
+result_data <- count_data %>% left_join(total_count, by = "chrincard")
+
+# Calculate the percentage died for each combination
+result_data <- result_data %>%
+  mutate(percent_died = (n / total) * 100)
+
+```
+
+```{r restating factor variables, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+yes_no_columns <- c("hypertension_mhyn", "chrincard", "malnutrition_mhyn", 
+                    "dehydration_vsorres", "diabetes_type_mhyn", "alt_conscious",
+                    "hypoxic_target", "o2_rx", "diabetes_combined", "infiltrates_faorres", "dialysis")
+
+dummy_data <- dummy_data %>%
+  mutate(across(all_of(yes_no_columns), 
+                ~ factor(., levels = c("Yes", "No")) %>% relevel(ref = "No")))
+
+# Set "0" as the reference level for no_comorbid
+dummy_data$no_comorbid <- factor(dummy_data$no_comorbid, levels = c("0", "1", "2", ">2")) %>% relevel(ref = "0")
+
+ethnicity_levels <- c("White", "South Asian", "East Asian", "Black", "Other Ethnic Minority")
+
+# Set "White" as the reference level for ethnicity_4levels
+dummy_data$ethnicity_4levels <- factor(dummy_data$ethnicity_4levels, levels = ethnicity_levels) %>% relevel(ref = "White")
 ```

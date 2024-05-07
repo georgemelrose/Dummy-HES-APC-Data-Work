@@ -170,7 +170,7 @@ dummy_data$ethnicity_4levels <- factor(dummy_data$ethnicity_4levels, levels = et
 
 
 ```{r full cohort km curve, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=11.5,fig.height=5.25,fig.align='center'}
-dummy_data$all_deaths <- ifelse(is.na(dummy_data$days_until_death), "0", "1")
+dummy_data$all_deaths <- ifelse(dummy_data$death == "No", "0", "1")
 
 dummy_data$all_deaths <- as.numeric(dummy_data$all_deaths)
 
@@ -241,6 +241,30 @@ ggsurvplot(fit_death_diabetes,
            legend.labs = c("No","Yes"), cumcensor = TRUE,
            pval.coord = c(0, 0.96), pval.method = TRUE, pval.method.coord = c(0, 0.98), conf.int.style = "step")
 ```
+
+```{r age factor km curve, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=11.5,fig.height=5.3,fig.align = 'center'}
+
+fit_death_age <- survfit(Surv(dummy_data$follow_up_time , dummy_data$all_deaths) ~ age.factor , data = dummy_data)
+
+ggsurvplot(fit_death_age,
+           xlim = c(0, 90),
+           ylim = c(0.9,1),
+           break.time.by = 10,
+           xlab = "Days since discharge",
+           ylab = "Survival Probability",
+           pval = TRUE,
+           ggtheme = theme_light(),
+           risk.table = TRUE,
+           risk.table.y.text.col = T,
+           risk.table.height = 0.2,
+           risk.table.y.text = FALSE,
+           conf.int = TRUE,
+           legend.labs = c("<50","50-69","70-79","80+"), cumcensor = TRUE,
+           pval.coord = c(0, 0.96), pval.method = TRUE, pval.method.coord = c(0, 0.98), conf.int.style = "step")
+```
+
+
+
 
 ## Cumulative Incidence of Deaths
 ```{r, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.width=10.75,fig.height=5.5,fig.align = 'center'}
