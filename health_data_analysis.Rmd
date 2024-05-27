@@ -79,6 +79,20 @@ nrow(dead_before_90)
 
 -   **8,441, 8.44%** patients died in total and **1045, 1.04%** died within 90 days of discharge. Of those patients that died, **12.4%** died within 90 days.The prevalence of 90 day post-discharge all-cause mortality dissimilar to Ramzi 2022 figure of **7.63%** (10.1016/j.ajem.2021.10.059).
 
+
+```{r events in total stats, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+event <- dummy_data %>% filter(death == "Yes" | readmission == "Yes") 
+nrow(event)
+
+# number of readmissions within 90 days
+event_before_90 <- event  %>%
+  filter(
+    days_until_death <= 90 | days_until_readmission <= 90
+  ) 
+
+nrow(event_before_90)
+```
+
 ## Top 10 Causes of Readmission
 
 ```{r Leading Causes of Readmission, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=10,fig.height=9.5}
@@ -185,7 +199,7 @@ fit_death <- survfit(Surv(dummy_data$follow_up_time, dummy_data$all_deaths) ~ 1,
 
 ggsurvplot(fit_death,
            xlim = c(0, 90),
-           ylim = c(0.9, 1),
+           ylim = c(0.85, 1),
            break.time.by = 10,
            xlab = "Days since discharge",
            ylab = "Survival Probability",
@@ -206,7 +220,7 @@ fit_death_sex <- survfit(Surv(dummy_data$follow_up_time , dummy_data$all_deaths)
 
 ggsurvplot(fit_death_sex,
            xlim = c(0, 90),
-           ylim = c(0.9,1),
+           ylim = c(0.85,1),
            break.time.by = 10,
            xlab = "Days since discharge",
            ylab = "Survival Probability",
@@ -227,7 +241,7 @@ fit_death_diabetes <- survfit(Surv(dummy_data$follow_up_time , dummy_data$all_de
 
 ggsurvplot(fit_death_diabetes,
            xlim = c(0, 90),
-           ylim = c(0.9,1),
+           ylim = c(0.85,1),
            break.time.by = 10,
            xlab = "Days since discharge",
            ylab = "Survival Probability",
@@ -260,10 +274,30 @@ ggsurvplot(fit_death_age,
            risk.table.y.text = FALSE,
            conf.int = TRUE,
            legend.labs = c("<50","50-69","70-79","80+"), cumcensor = TRUE,
-           pval.coord = c(0, 0.96), pval.method = TRUE, pval.method.coord = c(0, 0.98), conf.int.style = "step")
+           pval.coord = c(0, 0.96), pval.method = TRUE, pval.method.coord = c(0, 0.97), conf.int.style = "step")
 ```
 
 
+```{r age chrincard km curve, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=11.5,fig.height=5.3,fig.align = 'center'}
+
+fit_death_chrincard  <- survfit(Surv(dummy_data$follow_up_time , dummy_data$all_deaths) ~ chrincard  , data = dummy_data)
+
+ggsurvplot(fit_death_chrincard ,
+           xlim = c(0, 90),
+           ylim = c(0.9,1),
+           break.time.by = 10,
+           xlab = "Days since discharge",
+           ylab = "Survival Probability",
+           pval = TRUE,
+           ggtheme = theme_light(),
+           risk.table = TRUE,
+           risk.table.y.text.col = T,
+           risk.table.height = 0.2,
+           risk.table.y.text = FALSE,
+           conf.int = TRUE,
+           legend.labs = c("No","Yes"), cumcensor = TRUE,
+           pval.coord = c(0, 0.96), pval.method = TRUE, pval.method.coord = c(0, 0.97), conf.int.style = "step")
+```
 
 
 ## Cumulative Incidence of Deaths
@@ -807,7 +841,7 @@ mykable = function(x){
 ```
 
 
-## Cox-proportional Hazards Regression - All Causes of Readmission HR Plot {.flexbox .vcenter .smaller}
+## Cox-proportional Hazards Regression - Falls and Fractures Causes of Readmission HR Plot {.flexbox .vcenter .smaller}
 
 ```{r, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=10,fig.height=5,fig.align = 'center'}
 
