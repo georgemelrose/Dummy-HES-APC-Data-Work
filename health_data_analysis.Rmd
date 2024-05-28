@@ -38,6 +38,11 @@ readm_before_90 <- readm %>%
     days_until_readmission <= 90
   ) 
 
+readm_after_90 <- readm %>%
+  filter(
+    days_until_readmission > 90
+  ) 
+
 nrow(readm_before_90)
 ```
 
@@ -72,6 +77,11 @@ nrow(dead)
 dead_before_90 <- dead %>%
   filter(
     days_until_death <= 90
+  ) 
+
+dead_after_90 <- dead %>%
+  filter(
+    days_until_death > 90
   ) 
 
 nrow(dead_before_90)
@@ -118,7 +128,7 @@ top2 <- top %>%
 
 top2 <-  top2  %>% mutate(Proportion = paste0(Proportion, "%")) %>% mutate(`Cumulative Proportion` = paste0(`Cumulative Proportion`, "%"))
 
-top2$`Cumulative Proportion` <- gsub("199.84%", "", as.character(top2$`Cumulative Proportion` ))
+top2$`Cumulative Proportion` <- gsub("199.96%", "", as.character(top2$`Cumulative Proportion` ))
 
 p <- flextable(top2) 
 
@@ -152,7 +162,7 @@ top2 <- top %>%
 
 top2 <-  top2  %>% mutate(Proportion = paste0(Proportion, "%")) %>% mutate(`Cumulative Proportion` = paste0(`Cumulative Proportion`, "%"))
 
-top2$`Cumulative Proportion` <- gsub("199.82%", "", as.character(top2$`Cumulative Proportion` ))
+top2$`Cumulative Proportion` <- gsub("199.98%", "", as.character(top2$`Cumulative Proportion` ))
 
 p <- flextable(top2) 
 
@@ -210,13 +220,13 @@ ggsurvplot(fit_death,
                   panel.background = element_blank(), # Remove panel background
                   plot.background = element_blank(),  # Remove plot background
                   axis.line = element_line(color = "black"), # Keep axis lines if desired
-                  axis.title = element_text(size = 15), # Increase axis title size
-                  axis.text = element_text(size = 12),  # Increase axis text size
-                  legend.text = element_text(size = 15), # Increase legend text size
-                  legend.title = element_text(size = 20), # Increase legend title size
-                  plot.title = element_text(size = 20), # Increase plot title size
-                  plot.subtitle = element_text(size = 15), # Increase plot subtitle size
-                  legend.key.size = unit(2, "lines") # Increase legend key size
+                  axis.title = element_text(size = 20), # Increase axis title size
+                  axis.text = element_text(size = 17),  # Increase axis text size
+                  legend.text = element_text(size = 20), # Increase legend text size
+                  legend.title = element_text(size = 25), # Increase legend title size
+                  plot.title = element_text(size = 25), # Increase plot title size
+                  plot.subtitle = element_text(size = 20), # Increase plot subtitle size
+                  legend.key.size = unit(4, "lines") # Increase legend key size
                 ),
            risk.table = FALSE,
            risk.table.y.text.col = TRUE,
@@ -248,21 +258,21 @@ ggsurvplot(fit_death_sex,
                   panel.background = element_blank(), # Remove panel background
                   plot.background = element_blank(),  # Remove plot background
                   axis.line = element_line(color = "black"), # Keep axis lines if desired
-                  axis.title = element_text(size = 15), # Increase axis title size
-                  axis.text = element_text(size = 12),  # Increase axis text size
-                  legend.text = element_text(size = 15), # Increase legend text size
-                  legend.title = element_text(size = 20), # Increase legend title size
-                  plot.title = element_text(size = 20), # Increase plot title size
-                  plot.subtitle = element_text(size = 15), # Increase plot subtitle size
-                  legend.key.size = unit(2, "lines") # Increase legend key size
+                axis.title = element_text(size = 20), # Increase axis title size
+                  axis.text = element_text(size = 17),  # Increase axis text size
+                  legend.text = element_text(size = 20), # Increase legend text size
+                  legend.title = element_text(size = 25), # Increase legend title size
+                  plot.title = element_text(size = 25), # Increase plot title size
+                  plot.subtitle = element_text(size = 20), # Increase plot subtitle size
+                  legend.key.size = unit(4, "lines") # Increase legend key size
                 ),
            risk.table = FALSE,
            risk.table.y.text.col = TRUE,
            risk.table.height = 0.2,
            risk.table.y.text = FALSE,
-           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.5), pval.method = TRUE, pval.method.coord = c(0, 0.55),
+           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.48), pval.method = TRUE, pval.method.coord = c(0, 0.55),
            legend.labs = legend_labels,
-           legend.title = "Sex" # Set legend title
+           legend.title = "Sex",pval.size = 10, pval.method.size = 10 # Set legend title
 )
 
 ```
@@ -271,38 +281,77 @@ ggsurvplot(fit_death_sex,
 
 fit_death_diabetes <- survfit(Surv(dummy_data$follow_up_time , dummy_data$all_deaths) ~ diabetes_type_mhyn , data = dummy_data)
 
-ggsurvplot(fit_death_diabetes,
+
+legend_labels <- c("No", "Yes")
+
+ggsurvplot(fit_death_diabetes ,
            xlim = c(0, 365),
            ylim = c(0, 1),
            break.time.by = 28,
            xlab = "Days since discharge",
            ylab = "Survival Probability",
            pval = TRUE,
-           ggtheme = theme_light(),
+           ggtheme = theme_minimal() + theme(
+                  panel.grid.major = element_blank(), # Remove major grid lines
+                  panel.grid.minor = element_blank(), # Remove minor grid lines
+                  panel.background = element_blank(), # Remove panel background
+                  plot.background = element_blank(),  # Remove plot background
+                  axis.line = element_line(color = "black"), # Keep axis lines if desired
+                 axis.title = element_text(size = 20), # Increase axis title size
+                  axis.text = element_text(size = 17),  # Increase axis text size
+                  legend.text = element_text(size = 20), # Increase legend text size
+                  legend.title = element_text(size = 25), # Increase legend title size
+                  plot.title = element_text(size = 25), # Increase plot title size
+                  plot.subtitle = element_text(size = 20), # Increase plot subtitle size
+                  legend.key.size = unit(4, "lines") # Increase legend key size
+                ),
            risk.table = FALSE,
-           risk.table.y.text.col = T,
+           risk.table.y.text.col = TRUE,
            risk.table.height = 0.2,
            risk.table.y.text = FALSE,
-           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.5), pval.method = TRUE, pval.method.coord = c(0, 0.55) )
+         conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.48), pval.method = TRUE, pval.method.coord = c(0, 0.55),
+           legend.labs = legend_labels,
+           legend.title = "Diabetes",pval.size = 10, pval.method.size = 10
+)
+
 ```
 
 ```{r age factor km curve, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=11.5,fig.height=5.3,fig.align = 'center'}
 
 fit_death_age <- survfit(Surv(dummy_data$follow_up_time , dummy_data$all_deaths) ~ age.factor , data = dummy_data)
 
-ggsurvplot(fit_death_age,
+legend_labels <- c("<50", "50-69","70-79","80+")
+
+ggsurvplot(fit_death_age ,
            xlim = c(0, 365),
            ylim = c(0, 1),
            break.time.by = 28,
            xlab = "Days since discharge",
            ylab = "Survival Probability",
            pval = TRUE,
-           ggtheme = theme_light(),
+           ggtheme = theme_minimal() + theme(
+                  panel.grid.major = element_blank(), # Remove major grid lines
+                  panel.grid.minor = element_blank(), # Remove minor grid lines
+                  panel.background = element_blank(), # Remove panel background
+                  plot.background = element_blank(),  # Remove plot background
+                  axis.line = element_line(color = "black"), # Keep axis lines if desired
+                  axis.title = element_text(size = 20), # Increase axis title size
+                  axis.text = element_text(size = 17),  # Increase axis text size
+                  legend.text = element_text(size = 20), # Increase legend text size
+                  legend.title = element_text(size = 25), # Increase legend title size
+                  plot.title = element_text(size = 25), # Increase plot title size
+                  plot.subtitle = element_text(size = 20), # Increase plot subtitle size
+                  legend.key.size = unit(4, "lines") # Increase legend key size
+                ),
            risk.table = FALSE,
-           risk.table.y.text.col = T,
+           risk.table.y.text.col = TRUE,
            risk.table.height = 0.2,
            risk.table.y.text = FALSE,
-           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.5), pval.method = TRUE, pval.method.coord = c(0, 0.55) )
+           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.48), pval.method = TRUE, pval.method.coord = c(0, 0.55),
+           legend.labs = legend_labels,
+           legend.title = "Age",pval.size = 10, pval.method.size = 10 # Set legend title
+)
+
 ```
 
 
@@ -310,19 +359,38 @@ ggsurvplot(fit_death_age,
 
 fit_death_comorbid <- survfit(Surv(dummy_data$follow_up_time , dummy_data$all_deaths) ~ no_comorbid , data = dummy_data)
 
-ggsurvplot(fit_death_comorbid,
+legend_labels <- c(">2", "0","1","2")
+
+ggsurvplot(fit_death_comorbid ,
            xlim = c(0, 365),
            ylim = c(0, 1),
            break.time.by = 28,
            xlab = "Days since discharge",
            ylab = "Survival Probability",
            pval = TRUE,
-           ggtheme = theme_light(),
+           ggtheme = theme_minimal() + theme(
+                  panel.grid.major = element_blank(), # Remove major grid lines
+                  panel.grid.minor = element_blank(), # Remove minor grid lines
+                  panel.background = element_blank(), # Remove panel background
+                  plot.background = element_blank(),  # Remove plot background
+                  axis.line = element_line(color = "black"), # Keep axis lines if desired
+                  axis.title = element_text(size = 20), # Increase axis title size
+                  axis.text = element_text(size = 17),  # Increase axis text size
+                  legend.text = element_text(size = 20), # Increase legend text size
+                  legend.title = element_text(size = 25), # Increase legend title size
+                  plot.title = element_text(size = 25), # Increase plot title size
+                  plot.subtitle = element_text(size = 20), # Increase plot subtitle size
+                  legend.key.size = unit(4, "lines") # Increase legend key size
+                ),
            risk.table = FALSE,
-           risk.table.y.text.col = T,
+           risk.table.y.text.col = TRUE,
            risk.table.height = 0.2,
            risk.table.y.text = FALSE,
-           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.5), pval.method = TRUE, pval.method.coord = c(0, 0.55) )
+           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.48), pval.method = TRUE, pval.method.coord = c(0, 0.55),
+           legend.labs = legend_labels,
+           legend.title = "No.Comorbidities",pval.size = 10, pval.method.size = 10 # Set legend title
+)
+
 ```
 
 
@@ -346,6 +414,103 @@ ggsurvplot(fit_death_chrincard ,
            legend.labs = c("No","Yes"), cumcensor = TRUE,
            pval.coord = c(0, 0.96), pval.method = TRUE, pval.method.coord = c(0, 0.97), conf.int.style = "step")
 ```
+
+
+
+## Cumulative Incidence of Readmissions
+
+```{r all cohort ci readmissions, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.width=10.75,fig.height=5.5,fig.align = 'center'}
+cohort <- dummy_data
+
+dead_within_90 <- cohort %>% filter(death == "Yes") 
+
+dead_within_90 <- dead_within_90 %>% filter(days_until_death <= 90) 
+
+cohort$status_1 <- NA
+
+cohort <- cohort %>% mutate(status_1 =  case_when(
+readmission == "Yes" ~ "1", TRUE ~ "0" ) )
+
+cohort <- cohort %>% mutate(status_2 =  case_when(
+  status_1 == 1  ~ "Readmission",
+  TRUE ~ "NA" ) )
+
+
+ci_fit <- cuminc(cohort$follow_up_time , cohort$status_1)
+
+ciplot <- ci_fit %>% list_modify("Tests" = NULL) %>%
+  map_df(`[`, c("time", "est", "var"), .id = "id") %>%
+   mutate(Readmission = recode(
+    id,
+    "1 1" = "Readmission"))  
+
+
+ggplot(ciplot, aes(x = time, y = est, color = Readmission)) +
+  geom_step(lwd = 1.2) +
+  ylim(c(0, 0.3)) +
+  scale_x_continuous(breaks = seq(0, 365, 28), limits = c(0, 365)) +  # Setting limits here
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(size = 25), # Increase plot title size
+    legend.title = element_blank(),
+    legend.position = "bottom",
+    axis.title = element_text(size = 20), # Increase axis title size
+    axis.text = element_text(size = 17),  # Increase axis text size
+    legend.text = element_text(size = 20) # Increase legend text size
+  ) +
+  labs(
+    x = "Days",
+    y = "Cumulative readmissions (%)",
+    title = "All Patients"
+  )
+```
+
+
+
+```{r sex ci readmissions, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.width=10.75,fig.height=5.5,fig.align = 'center'}
+
+ci_sex <- cuminc(ftime = cohort$follow_up_time , fstatus = cohort$status_1, group= cohort$sex)
+
+ciplot <- ci_sex %>% list_modify("Tests" = NULL) %>%
+  map_df(`[`, c("time", "est", "var"), .id = "id") %>%
+  mutate(id = recode(
+    id,
+    "Male 1" = "Male:Readmissions",
+    "Female 1" = "Female:Readmissions")
+  ) %>%
+  separate(id, c("Sex","Event"),":")
+
+ggplot(ciplot, aes(x = time, y = est, color = Sex)) +
+  geom_step(lwd = 1.2) +
+  ylim(c(0, 0.3)) +
+  scale_x_continuous(breaks = seq(0, 365, 28), limits = c(0, 365)) +  # Setting limits here
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(size = 25), # Increase plot title size
+    legend.title = element_blank(),
+    legend.position = "bottom",
+    axis.title = element_text(size = 20), # Increase axis title size
+    axis.text = element_text(size = 17),  # Increase axis text size
+    legend.text = element_text(size = 20) # Increase legend text size
+  ) +
+  labs(
+    x = "Days",
+    y = "Cumulative readmissions (%)",
+    title = "All Patients"
+  ) +
+  annotate("text", x = 0, y = 0.26, hjust = 0,
+           label = paste0(
+             "Readmissions p-value (", ci_sex$Method, ") = ",  # Including test name
+             ifelse(ci_sex$Tests < .001,
+                    "<.001",
+                    round(ci_sex$Tests, 3))),
+           size = 10)  # Increasing text size
+
+```
+
+
+
+
 
 
 ## Cumulative Incidence of Deaths
