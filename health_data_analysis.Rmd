@@ -118,7 +118,7 @@ top2 <- top %>%
 
 top2 <-  top2  %>% mutate(Proportion = paste0(Proportion, "%")) %>% mutate(`Cumulative Proportion` = paste0(`Cumulative Proportion`, "%"))
 
-top2$`Cumulative Proportion` <- gsub("200%", "", as.character(top2$`Cumulative Proportion` ))
+top2$`Cumulative Proportion` <- gsub("199.84%", "", as.character(top2$`Cumulative Proportion` ))
 
 p <- flextable(top2) 
 
@@ -152,7 +152,7 @@ top2 <- top %>%
 
 top2 <-  top2  %>% mutate(Proportion = paste0(Proportion, "%")) %>% mutate(`Cumulative Proportion` = paste0(`Cumulative Proportion`, "%"))
 
-top2$`Cumulative Proportion` <- gsub("200.22%", "", as.character(top2$`Cumulative Proportion` ))
+top2$`Cumulative Proportion` <- gsub("199.82%", "", as.character(top2$`Cumulative Proportion` ))
 
 p <- flextable(top2) 
 
@@ -198,18 +198,33 @@ dummy_data$follow_up_time <- dummy_data$follow_up_time %>% replace_na(2000)
 fit_death <- survfit(Surv(dummy_data$follow_up_time, dummy_data$all_deaths) ~ 1, data = dummy_data)
 
 ggsurvplot(fit_death,
-           xlim = c(0, 90),
-           ylim = c(0.85, 1),
-           break.time.by = 10,
+           xlim = c(0, 365),
+           ylim = c(0, 1),
+           break.time.by = 28,
            xlab = "Days since discharge",
            ylab = "Survival Probability",
            pval = TRUE,
-           ggtheme = theme_light(),
-           risk.table = TRUE,
-           risk.table.y.text.col = T,
+           ggtheme = theme_minimal() + theme(
+                  panel.grid.major = element_blank(), # Remove major grid lines
+                  panel.grid.minor = element_blank(), # Remove minor grid lines
+                  panel.background = element_blank(), # Remove panel background
+                  plot.background = element_blank(),  # Remove plot background
+                  axis.line = element_line(color = "black"), # Keep axis lines if desired
+                  axis.title = element_text(size = 15), # Increase axis title size
+                  axis.text = element_text(size = 12),  # Increase axis text size
+                  legend.text = element_text(size = 15), # Increase legend text size
+                  legend.title = element_text(size = 20), # Increase legend title size
+                  plot.title = element_text(size = 20), # Increase plot title size
+                  plot.subtitle = element_text(size = 15), # Increase plot subtitle size
+                  legend.key.size = unit(2, "lines") # Increase legend key size
+                ),
+           risk.table = FALSE,
+           risk.table.y.text.col = TRUE,
            risk.table.height = 0.2,
            risk.table.y.text = FALSE,
-           conf.int = TRUE, cumcensor = TRUE, conf.int.style = "step")
+           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",
+           legend.title = element_blank() # Set legend title
+)
 ```
 
 ## Male vs Female Survival Probability for all Deaths {.flexbox .vcenter}
@@ -218,21 +233,38 @@ ggsurvplot(fit_death,
 
 fit_death_sex <- survfit(Surv(dummy_data$follow_up_time , dummy_data$all_deaths) ~ sex , data = dummy_data)
 
+legend_labels <- c("Female", "Male")
+
 ggsurvplot(fit_death_sex,
-           xlim = c(0, 90),
-           ylim = c(0.85,1),
-           break.time.by = 10,
+           xlim = c(0, 365),
+           ylim = c(0, 1),
+           break.time.by = 28,
            xlab = "Days since discharge",
            ylab = "Survival Probability",
            pval = TRUE,
-           ggtheme = theme_light(),
-           risk.table = TRUE,
-           risk.table.y.text.col = T,
+           ggtheme = theme_minimal() + theme(
+                  panel.grid.major = element_blank(), # Remove major grid lines
+                  panel.grid.minor = element_blank(), # Remove minor grid lines
+                  panel.background = element_blank(), # Remove panel background
+                  plot.background = element_blank(),  # Remove plot background
+                  axis.line = element_line(color = "black"), # Keep axis lines if desired
+                  axis.title = element_text(size = 15), # Increase axis title size
+                  axis.text = element_text(size = 12),  # Increase axis text size
+                  legend.text = element_text(size = 15), # Increase legend text size
+                  legend.title = element_text(size = 20), # Increase legend title size
+                  plot.title = element_text(size = 20), # Increase plot title size
+                  plot.subtitle = element_text(size = 15), # Increase plot subtitle size
+                  legend.key.size = unit(2, "lines") # Increase legend key size
+                ),
+           risk.table = FALSE,
+           risk.table.y.text.col = TRUE,
            risk.table.height = 0.2,
            risk.table.y.text = FALSE,
-           conf.int = TRUE,
-           legend.labs = c("Male", "Female"), cumcensor = TRUE,
-           pval.coord = c(0, 0.96), pval.method = TRUE, pval.method.coord = c(0, 0.98), conf.int.style = "step")
+           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.5), pval.method = TRUE, pval.method.coord = c(0, 0.55),
+           legend.labs = legend_labels,
+           legend.title = "Sex" # Set legend title
+)
+
 ```
 
 ```{r diabetes km curve, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=11.5,fig.height=5.3,fig.align = 'center'}
@@ -240,20 +272,18 @@ ggsurvplot(fit_death_sex,
 fit_death_diabetes <- survfit(Surv(dummy_data$follow_up_time , dummy_data$all_deaths) ~ diabetes_type_mhyn , data = dummy_data)
 
 ggsurvplot(fit_death_diabetes,
-           xlim = c(0, 90),
-           ylim = c(0.85,1),
-           break.time.by = 10,
+           xlim = c(0, 365),
+           ylim = c(0, 1),
+           break.time.by = 28,
            xlab = "Days since discharge",
            ylab = "Survival Probability",
            pval = TRUE,
            ggtheme = theme_light(),
-           risk.table = TRUE,
+           risk.table = FALSE,
            risk.table.y.text.col = T,
            risk.table.height = 0.2,
            risk.table.y.text = FALSE,
-           conf.int = TRUE,
-           legend.labs = c("No","Yes"), cumcensor = TRUE,
-           pval.coord = c(0, 0.96), pval.method = TRUE, pval.method.coord = c(0, 0.98), conf.int.style = "step")
+           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.5), pval.method = TRUE, pval.method.coord = c(0, 0.55) )
 ```
 
 ```{r age factor km curve, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=11.5,fig.height=5.3,fig.align = 'center'}
@@ -261,20 +291,38 @@ ggsurvplot(fit_death_diabetes,
 fit_death_age <- survfit(Surv(dummy_data$follow_up_time , dummy_data$all_deaths) ~ age.factor , data = dummy_data)
 
 ggsurvplot(fit_death_age,
-           xlim = c(0, 90),
-           ylim = c(0.9,1),
-           break.time.by = 10,
+           xlim = c(0, 365),
+           ylim = c(0, 1),
+           break.time.by = 28,
            xlab = "Days since discharge",
            ylab = "Survival Probability",
            pval = TRUE,
            ggtheme = theme_light(),
-           risk.table = TRUE,
+           risk.table = FALSE,
            risk.table.y.text.col = T,
            risk.table.height = 0.2,
            risk.table.y.text = FALSE,
-           conf.int = TRUE,
-           legend.labs = c("<50","50-69","70-79","80+"), cumcensor = TRUE,
-           pval.coord = c(0, 0.96), pval.method = TRUE, pval.method.coord = c(0, 0.97), conf.int.style = "step")
+           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.5), pval.method = TRUE, pval.method.coord = c(0, 0.55) )
+```
+
+
+```{r age factor km curve, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=11.5,fig.height=5.3,fig.align = 'center'}
+
+fit_death_comorbid <- survfit(Surv(dummy_data$follow_up_time , dummy_data$all_deaths) ~ no_comorbid , data = dummy_data)
+
+ggsurvplot(fit_death_comorbid,
+           xlim = c(0, 365),
+           ylim = c(0, 1),
+           break.time.by = 28,
+           xlab = "Days since discharge",
+           ylab = "Survival Probability",
+           pval = TRUE,
+           ggtheme = theme_light(),
+           risk.table = FALSE,
+           risk.table.y.text.col = T,
+           risk.table.height = 0.2,
+           risk.table.y.text = FALSE,
+           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.5), pval.method = TRUE, pval.method.coord = c(0, 0.55) )
 ```
 
 
