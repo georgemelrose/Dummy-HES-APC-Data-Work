@@ -982,113 +982,27 @@ no_readmission_indices <- which(dummy_data$readmission == "No")
 death_before_readmission_indices <- sample(no_readmission_indices, size = round(length(no_readmission_indices) * 0.8))
 dummy_data$days_until_death[death_before_readmission_indices] <- sample(1:90, length(death_before_readmission_indices), replace = TRUE)
 
-# Verify the proportions
-readmission_within_90 <- mean(dummy_data$days_until_readmission[yes_indices] <= 90, na.rm = TRUE)
-death_before_readmission <- mean(dummy_data$days_until_death[no_readmission_indices] <= 90, na.rm = TRUE)
-print(paste("Proportion of readmissions within 90 days:", readmission_within_90))
-print(paste("Proportion of deaths before readmission:", death_before_readmission))
 
 ```
 
 
 
 
-```{r restating factor variables, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
-# yes_no_columns <- c("hypertension_mhyn", "chrincard", "malnutrition_mhyn", 
-#                     "dehydration_vsorres", "diabetes_type_mhyn", "alt_conscious",
-#                     "hypoxic_target", "o2_rx", "diabetes_combined", "infiltrates_faorres", "dialysis")
-# 
-# dummy_data <- dummy_data %>%
-#   mutate(across(all_of(yes_no_columns), 
-#                 ~ factor(., levels = c("Yes", "No")) %>% relevel(ref = "No")))
-# 
-# # Set "0" as the reference level for no_comorbid
-# dummy_data$no_comorbid <- factor(dummy_data$no_comorbid, levels = c("0", "1", "2", ">2")) %>% relevel(ref = "0")
-# 
-# ethnicity_levels <- c("White", "South Asian", "East Asian", "Black", "Other Ethnic Minority")
-# 
-# # Set "White" as the reference level for ethnicity_4levels
-# dummy_data$ethnicity_4levels <- factor(dummy_data$ethnicity_4levels, levels = ethnicity_levels) %>% relevel(ref = "White")
-# 
-# # Set "0" as the reference level for Clinical_Frailty_Index
-# dummy_data$Clinical_Frailty_Index <- factor(dummy_data$Clinical_Frailty_Index, 
-# levels = c("1", "2", "3","4","5", "6", "7", "8","9")) %>% relevel(ref = "1")
-# 
-# # Set "10" as the reference level for IMD
-# dummy_data$IMD <- factor(dummy_data$IMD, 
-# levels = c("1", "2", "3","4","5", "6", "7", "8","9","10")) %>% relevel(ref = "10")
-# 
-# # Results table for IMD
-# frailty_table <- table(dummy_data$Clinical_Frailty_Index)
-# frailty_prop <- prop.table(frailty_table) * 100
-# 
-# frailty_result <- data.frame(
-#   Frailty_Index = names(frailty_table),
-#   Count = as.numeric(frailty_table),
-#   Percentage = as.numeric(frailty_prop)
-# )
-# frailty_result <- frailty_result[order(as.numeric(frailty_result$Frailty_Index)), ]
-# 
-# print("Distribution of Clinical Frailty Index:")
-# print(frailty_result)
-# 
-# 
-# 
-# # Results table for IMD
-# IMD_table <- table(dummy_data$IMD)
-# IMD_prop <- prop.table(IMD_table) * 100
-# 
-# IMD_result <- data.frame(
-#   IMD = names(IMD_table),
-#   Count = as.numeric(IMD_table),
-#   Percentage = as.numeric(IMD_prop)
-# )
-# IMD_result <- IMD_result[order(as.numeric(IMD_result$IMD)), ]
-# 
-# print("Distribution of IMD:")
-# print(IMD_result)
-# 
-# # Create a contingency table for Clinical Frailty Index and age.factor
-# contingency_table <- table(dummy_data$Clinical_Frailty_Index, dummy_data$age.factor)
-# 
-# # Convert contingency table to dataframe
-# contingency_df <- as.data.frame.matrix(contingency_table)
-# 
-# # Display the contingency table
-# print("Contingency Table: Clinical Frailty Index vs Age Factor")
-# print(contingency_df)
-# 
-# 
-# 
-# 
-# 
-# # Calculate the count of individuals by IMD and death
-# count_data <- dummy_data %>% count(IMD, death)
-# 
-# # Calculate the total count of individuals by IMD
-# total_count <- dummy_data %>% group_by(IMD) %>% summarise(total = n())
-# 
-# # Join the count_data and total_count data frames
-# result_data <- count_data %>% left_join(total_count, by = "IMD")
-# 
-# # Calculate the percentage died for each combination
-# result_data <- result_data %>%
-#   mutate(percent_died = (n / total) * 100)
-# 
-# 
-# # Calculate the count of individuals by Frailty Index and death
-# count_data <- dummy_data %>% count(Clinical_Frailty_Index, death)
-# 
-# # Calculate the total count of individuals by Frailty Index
-# total_count <- dummy_data %>% group_by(Clinical_Frailty_Index) %>% summarise(total = n())
-# 
-# # Join the count_data and total_count data frames
-# result_data <- count_data %>% left_join(total_count, by = "Clinical_Frailty_Index")
-# 
-# # Calculate the percentage died for each combination
-# result_data <- result_data %>%
-#   mutate(percent_died = (n / total) * 100)
-# 
+```{r cleaning up rows that are na for days until readmission or death despite having a readmission or death, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
+
+# Set the seed for reproducibility
+set.seed(123)
+
+# Function to generate random days above 90
+generate_random_days_above_90 <- function(n) {
+  sample(91:730, n, replace = TRUE)
+}
+
+# Ensure 'days_until_readmission' or 'days_until_death' are above 90 for rows where 'death' or 'readmission' is "Yes" but the corresponding days field is blank
+dummy_data$days_until_readmission <- ifelse(dummy_data$readmission == "Yes" & is.na(dummy_data$days_until_readmission), generate_random_days_above_90(sum(dummy_data$readmission == "Yes" & is.na(dummy_data$days_until_readmission))), dummy_data$days_until_readmission)
+dummy_data$days_until_death <- ifelse(dummy_data$death == "Yes" & is.na(dummy_data$days_until_death), generate_random_days_above_90(sum(dummy_data$death == "Yes" & is.na(dummy_data$days_until_death))), dummy_data$days_until_death)
+
+
 
 fwrite(dummy_data,"dummy_data_complete.csv")
 
