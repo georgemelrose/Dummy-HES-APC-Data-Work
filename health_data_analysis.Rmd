@@ -669,9 +669,7 @@ ggplot(ciplot, aes(x = time, y = est, color = No.Comorbidities)) +
 
 
 ## Cumulative Incidence of Deaths
-```{r, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.width=10.75,fig.height=5.5,fig.align = 'center'}
-cohort <- dummy_data 
-
+```{r all cohort CI deaths, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.width=10.75,fig.height=5.5,fig.align = 'center'}
 cohort$status_1 <- NA
 
 cohort <- cohort %>% mutate(status_1 =  case_when(
@@ -700,11 +698,39 @@ ggplot(ciplot, aes(x = time, y = est, color = Death)) +
                           legend.title = element_blank(),
                           legend.position = "bottom") +
   labs(x = "Days",
-       y = "Cumulative incidence",
+       y = "Cumulative incidence of Deaths",
        title = "CI Plot of Deaths across Whole Cohort")  
+
+
+ggplot(ciplot, aes(x = time, y = est, color = Death)) +
+  geom_step(lwd = 1.2) +
+  scale_y_continuous(limits = c(0, 0.3), labels = scales::percent_format(accuracy = 1)) +  # Format y-axis as percentages
+  scale_x_continuous(breaks = seq(0, 365, 28), limits = c(0, 365)) +  # Setting limits here
+  theme_minimal() +  # Use theme_minimal for a simple background
+  theme(
+    plot.title = element_text(size = 25), # Increase plot title size
+    legend.title = element_blank(),
+    legend.position = "bottom",
+    axis.title = element_text(size = 20), # Increase axis title size
+    axis.text = element_text(size = 17),  # Increase axis text size
+    legend.text = element_text(size = 20), # Increase legend text size
+    panel.grid.major = element_blank(),  # Remove major grid lines
+    panel.grid.minor = element_blank(),  # Remove minor grid lines
+    panel.background = element_rect(fill = "white", color = NA),  # Ensure background is white and remove panel border
+    plot.background = element_rect(fill = "white", color = NA),  # Ensure plot area is white and remove plot border
+    axis.line = element_line(color = "black"),  # Keep axis lines
+    axis.line.y.right = element_blank(),  # Remove right side axis line
+    axis.line.x.top = element_blank()  # Remove top side axis line
+  ) +
+  labs(
+    x = "Days",
+    y = "Cumulative deaths",
+    title = "All Patients"
+  )
+
 ```
 
-```{r}
+```{r all cohort CI deaths, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.width=10.75,fig.height=5.5,fig.align = 'center'}
 ci_sex <- cuminc(ftime = cohort$follow_up_time , fstatus = cohort$status_1, group= cohort$sex)
 
 ciplot <- ci_sex %>% list_modify("Tests" = NULL) %>%
