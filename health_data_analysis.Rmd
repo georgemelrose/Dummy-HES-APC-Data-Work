@@ -270,7 +270,7 @@ ggsurvplot(fit_death_sex,
            risk.table.y.text.col = TRUE,
            risk.table.height = 0.2,
            risk.table.y.text = FALSE,
-           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.48), pval.method = TRUE, pval.method.coord = c(0, 0.55),
+           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.47), pval.method = TRUE, pval.method.coord = c(0, 0.55),
            legend.labs = legend_labels,
            legend.title = "Sex",pval.size = 10, pval.method.size = 10 # Set legend title
 )
@@ -347,7 +347,7 @@ ggsurvplot(fit_death_age ,
            risk.table.y.text.col = TRUE,
            risk.table.height = 0.2,
            risk.table.y.text = FALSE,
-           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.48), pval.method = TRUE, pval.method.coord = c(0, 0.55),
+           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.46), pval.method = TRUE, pval.method.coord = c(0, 0.55),
            legend.labs = legend_labels,
            legend.title = "Age",pval.size = 10, pval.method.size = 10 # Set legend title
 )
@@ -386,7 +386,7 @@ ggsurvplot(fit_death_comorbid ,
            risk.table.y.text.col = TRUE,
            risk.table.height = 0.2,
            risk.table.y.text = FALSE,
-           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.48), pval.method = TRUE, pval.method.coord = c(0, 0.55),
+           conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.46), pval.method = TRUE, pval.method.coord = c(0, 0.55),
            legend.labs = legend_labels,
            legend.title = "No.Comorbidities",pval.size = 10, pval.method.size = 10 # Set legend title
 )
@@ -447,22 +447,30 @@ ciplot <- ci_fit %>% list_modify("Tests" = NULL) %>%
 
 ggplot(ciplot, aes(x = time, y = est, color = Readmission)) +
   geom_step(lwd = 1.2) +
-  ylim(c(0, 0.3)) +
+  scale_y_continuous(limits = c(0, 0.3), labels = scales::percent_format(accuracy = 1)) +  # Format y-axis as percentages
   scale_x_continuous(breaks = seq(0, 365, 28), limits = c(0, 365)) +  # Setting limits here
-  theme_minimal() + 
+  theme_minimal() +  # Use theme_minimal for a simple background
   theme(
     plot.title = element_text(size = 25), # Increase plot title size
     legend.title = element_blank(),
     legend.position = "bottom",
     axis.title = element_text(size = 20), # Increase axis title size
     axis.text = element_text(size = 17),  # Increase axis text size
-    legend.text = element_text(size = 20) # Increase legend text size
+    legend.text = element_text(size = 20), # Increase legend text size
+    panel.grid.major = element_blank(),  # Remove major grid lines
+    panel.grid.minor = element_blank(),  # Remove minor grid lines
+    panel.background = element_rect(fill = "white", color = NA),  # Ensure background is white and remove panel border
+    plot.background = element_rect(fill = "white", color = NA),  # Ensure plot area is white and remove plot border
+    axis.line = element_line(color = "black"),  # Keep axis lines
+    axis.line.y.right = element_blank(),  # Remove right side axis line
+    axis.line.x.top = element_blank()  # Remove top side axis line
   ) +
   labs(
     x = "Days",
-    y = "Cumulative readmissions (%)",
+    y = "Cumulative readmissions",
     title = "All Patients"
   )
+
 ```
 
 
@@ -482,7 +490,7 @@ ciplot <- ci_sex %>% list_modify("Tests" = NULL) %>%
 
 ggplot(ciplot, aes(x = time, y = est, color = Sex)) +
   geom_step(lwd = 1.2) +
-  ylim(c(0, 0.3)) +
+    scale_y_continuous(limits = c(0, 0.3), labels = scales::percent_format(accuracy = 1)) +  # Format y-axis as percentages
   scale_x_continuous(breaks = seq(0, 365, 28), limits = c(0, 365)) +  # Setting limits here
   theme_minimal() + 
   theme(
@@ -491,22 +499,143 @@ ggplot(ciplot, aes(x = time, y = est, color = Sex)) +
     legend.position = "bottom",
     axis.title = element_text(size = 20), # Increase axis title size
     axis.text = element_text(size = 17),  # Increase axis text size
-    legend.text = element_text(size = 20) # Increase legend text size
+    legend.text = element_text(size = 20), # Increase legend text size
+    panel.grid.major = element_blank(),  # Remove major grid lines
+    panel.grid.minor = element_blank(),  # Remove minor grid lines
+    panel.background = element_rect(fill = "white", color = NA),  # Ensure background is white and remove panel border
+    plot.background = element_rect(fill = "white", color = NA),  # Ensure plot area is white and remove plot border
+    axis.line = element_line(color = "black"),  # Keep axis lines
+    axis.line.y.right = element_blank(),  # Remove right side axis line
+    axis.line.x.top = element_blank()  # Remove top side axis line
   ) +
   labs(
     x = "Days",
-    y = "Cumulative readmissions (%)",
-    title = "All Patients"
+    y = "Cumulative readmissions",
+    title = "Stratified by Sex"
   ) +
   annotate("text", x = 0, y = 0.26, hjust = 0,
            label = paste0(
-             "Readmissions p-value (", ci_sex$Method, ") = ",  # Including test name
-             ifelse(ci_sex$Tests < .001,
+             "Readmissions p-value = ",
+             ifelse(ci_sex$Tests[1,2] < .001,
                     "<.001",
-                    round(ci_sex$Tests, 3))),
-           size = 10)  # Increasing text size
+                    round(ci_sex$Tests[1,2], 3))),
+           size = 10)
+
 
 ```
+
+
+
+```{r age ci readmissions, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.width=10.75,fig.height=5.5,fig.align = 'center'}
+
+ci_age <- cuminc(ftime = cohort$follow_up_time , fstatus = cohort$status_1, group= cohort$age.factor)
+
+ciplot <- ci_age %>% list_modify("Tests" = NULL) %>%
+  map_df(`[`, c("time", "est", "var"), .id = "id") %>%
+  mutate(id = recode(
+    id,
+    "<50 1" = "<50:Readmissions",
+    "50-69 1" = "50-69:Readmissions",
+    "70-79 1" = "70-79:Readmissions",
+    "80+ 1" = "80+:Readmissions",
+    )
+  ) %>%
+  separate(id, c("Age","Event"),":")
+
+ggplot(ciplot, aes(x = time, y = est, color = Age)) +
+  geom_step(lwd = 1.2) +
+  ylim(c(0, 0.3)) +
+  scale_y_continuous(limits = c(0, 0.3), labels = scales::percent_format(accuracy = 1)) +  # Format y-axis as percentages
+  scale_x_continuous(breaks = seq(0, 365, 28), limits = c(0, 365)) +  # Setting limits here
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(size = 25), # Increase plot title size
+    legend.title = element_blank(),
+    legend.position = "bottom",
+    axis.title = element_text(size = 20), # Increase axis title size
+    axis.text = element_text(size = 17),  # Increase axis text size
+    legend.text = element_text(size = 20), # Increase legend text size
+    panel.grid.major = element_blank(),  # Remove major grid lines
+    panel.grid.minor = element_blank(),  # Remove minor grid lines
+    panel.background = element_rect(fill = "white", color = NA),  # Ensure background is white and remove panel border
+    plot.background = element_rect(fill = "white", color = NA),  # Ensure plot area is white and remove plot border
+    axis.line = element_line(color = "black"),  # Keep axis lines
+    axis.line.y.right = element_blank(),  # Remove right side axis line
+    axis.line.x.top = element_blank()  # Remove top side axis line
+  ) +
+  labs(
+    x = "Days",
+    y = "Cumulative readmissions",
+    title = "Stratified by Age(factor)"
+  ) +
+  annotate("text", x = 0, y = 0.27, hjust = 0,
+           label = paste0(
+             "Readmissions p-value = ",
+             ifelse(ci_age$Tests[1,2] < .001,
+                    "<.001",
+                    round(ci_age$Tests[1,2], 3))),
+           size = 7.5)
+
+
+```
+
+
+
+
+
+```{r comorbidities ci readmissions, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.width=10.75,fig.height=5.5,fig.align = 'center'}
+
+ci_comorbid <- cuminc(ftime = cohort$follow_up_time , fstatus = cohort$status_1, group= cohort$no_comorbid)
+
+ciplot <- ci_comorbid %>% list_modify("Tests" = NULL) %>%
+  map_df(`[`, c("time", "est", "var"), .id = "id") %>%
+  mutate(id = recode(
+    id,
+    ">2 1" = ">2:Readmissions",
+    "0 1" = "0:Readmissions",
+    "1 1" = "1:Readmissions",
+    "2 1" = "2:Readmissions",
+    )
+  ) %>%
+  separate(id, c("No.Comorbidities","Event"),":")
+
+ggplot(ciplot, aes(x = time, y = est, color = No.Comorbidities)) +
+  geom_step(lwd = 1.2) +
+  scale_y_continuous(limits = c(0, 0.3), labels = scales::percent_format(accuracy = 1)) +  # Format y-axis as percentages
+  scale_x_continuous(breaks = seq(0, 365, 28), limits = c(0, 365)) +  # Setting limits here
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(size = 25), # Increase plot title size
+    legend.title = element_blank(),
+    legend.position = "bottom",
+    axis.title = element_text(size = 20), # Increase axis title size
+    axis.text = element_text(size = 17),  # Increase axis text size
+    legend.text = element_text(size = 20), # Increase legend text size
+    panel.grid.major = element_blank(),  # Remove major grid lines
+    panel.grid.minor = element_blank(),  # Remove minor grid lines
+    panel.background = element_rect(fill = "white", color = NA),  # Ensure background is white and remove panel border
+    plot.background = element_rect(fill = "white", color = NA),  # Ensure plot area is white and remove plot border
+    axis.line = element_line(color = "black"),  # Keep axis lines
+    axis.line.y.right = element_blank(),  # Remove right side axis line
+    axis.line.x.top = element_blank()  # Remove top side axis line
+  ) +
+  labs(
+    x = "Days",
+    y = "Cumulative readmissions",
+    title = "Stratified by No.Comorbidities"
+  ) +
+  annotate("text", x = 0, y = 0.27, hjust = 0,
+           label = paste0(
+             "Readmissions p-value = ",
+             ifelse(ci_comorbid$Tests[1,2] < .001,
+                    "<.001",
+                    round(ci_comorbid$Tests[1,2], 3))),
+           size = 7.5)
+
+```
+
+
+
 
 
 
@@ -873,6 +1002,30 @@ cowplot::plot_grid(plot, num$table + theme_cleantable(),
 ```
 
 
+
+
+```{r, warning=FALSE, message=FALSE,}
+# Set "White" as the reference level
+dummy_data <- dummy_data %>%
+  mutate(ethnicity_4levels = factor(ethnicity_4levels)) %>%
+  mutate(ethnicity_4levels = relevel(ethnicity_4levels, ref = "White"))
+
+dummy_data <- dummy_data %>%
+  mutate(no_comorbid = factor(no_comorbid, levels = c("0", "1", "2", ">2")))
+
+dummy_data <- dummy_data %>%
+  mutate(Clinical_Frailty_Index = factor(Clinical_Frailty_Index, levels = 1:9))
+
+dummy_data <- dummy_data %>%
+  mutate(IMD = factor(IMD, levels = 1:10))
+
+dummy_data <- dummy_data %>%
+  mutate(sex = factor(sex)) %>%
+  mutate(sex = relevel(sex, ref = "Male"))
+
+```
+
+
 ```{r, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.align = 'center',fig.width=11,fig.height=5}
 
 dummy_data$readm_within_90 <- ifelse(dummy_data$days_until_readmission <= 90, "1", "0")
@@ -888,9 +1041,7 @@ dummy_data$readmission_time <- dummy_data$readmission_time %>% replace_na(2000)
 dependent = "Surv(days_until_readmission, readm_within_90 )"
 dependent_label = "Post-discharge readmission"
 
-vars_multi = c("age.factor","sex","chrincard", "diabetes_combined","dialysis",
-               "ethnicity_4levels","hypertension_mhyn",
-               "no_comorbid","alt_conscious")
+vars_multi = c("age.factor","sex","ethnicity_4levels","IMD","Clinical_Frailty_Index")
 
 
 tab = dummy_data %>% 
@@ -933,6 +1084,160 @@ dummy_data %>%
 tab[[2]] %>% knitr::kable()
 
 ```
+
+
+
+```{r}
+dummy_data$age.factor <- dummy_data$age.factor %>% ff_label("Age group, years")
+
+dummy_data$sex <- dummy_data$sex %>% ff_label("Sex")
+
+dummy_data$ethnicity_4levels <- dummy_data$ethnicity_4levels  %>% ff_label("Ethnicity")
+
+dummy_data$Clinical_Frailty_Index<- dummy_data$Clinical_Frailty_Index %>% ff_label("Clinial Frailty Index")
+
+dummy_data$IMD<- dummy_data$IMD %>% ff_label("UK-level decile for Index of Multiple Deprivation")
+
+dummy_data$diabetes_type_mhyn <- dummy_data$diabetes_type_mhyn %>% ff_label("Diabetes Present (Yes/No)")
+
+dummy_data$hypertension_mhyn <- dummy_data$hypertension_mhyn %>% ff_label("Hypertension Present (Yes/No)")
+
+dummy_data$malnutrition_mhyn <- dummy_data$malnutrition_mhyn %>% ff_label("Malnutrition Present (Yes/No)")
+
+dummy_data$no_comorbid <- dummy_data$no_comorbid %>% ff_label("No.Comorbidities")
+
+dummy_data$chrincard <- dummy_data$chrincard %>% ff_label("Chronic Cardiac Disease Present (Yes/No)")
+
+
+```
+
+
+
+
+
+
+
+
+```{r, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.align = 'center',fig.width=11,fig.height=5}
+
+dummy_data$readm <- ifelse(dummy_data$readmission == "Yes", "1", "0")
+
+dummy_data$readm <- as.numeric(dummy_data$readm)
+
+dummy_data$readm<- dummy_data$readm %>% replace_na(0)
+
+dummy_data$readmission_time <- dummy_data$readmission_time %>% replace_na(2000)
+
+
+
+dependent = "Surv(days_until_readmission, readm)"
+dependent_label = "Post-discharge readmission"
+
+vars_multi = c("age.factor","sex","ethnicity_4levels","IMD","no_comorbid","diabetes_type_mhyn",
+               "hypertension_mhyn","malnutrition_mhyn","Clinical_Frailty_Index","chrincard")
+
+
+tab = dummy_data %>% 
+  finalfit(dependent, vars_multi, metrics = TRUE, add_dependent_label = FALSE)
+
+mykable = function(x){
+    knitr::kable(x, row.names = FALSE, align = c("l", "l", "r", "r", "r", "r", "r", "r", "r"))
+}
+
+# Your data manipulation and kable code
+# result <- tab[[1]] %>%
+#   rename(!!{{ dependent_label }} := label) %>%
+#   rename(" " = levels) %>%
+#   rename("  " = all)
+
+# Apply mykable to the result
+# mykable(result)
+
+# tab[[1]] %>%
+#   rename({{dependent_label}} := label) %>%
+#   rename(" " = levels) %>%
+#   rename("  " = all) %>%
+#   mykable()
+```
+
+
+
+
+```{r, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=10,fig.height=5,fig.align = 'center'}
+
+dummy_data %>% 
+  hr_plot(dependent, vars_multi,
+          breaks = c(0.03,0.1,0.3,1,3,10),
+          remove_ref = TRUE,
+          column_space = c(-1,0,0.75),
+          table_text_size = 3,
+          title_text_size = 16,
+          dependent_label = dependent_label) 
+
+tab[[2]] %>% knitr::kable()
+
+```
+
+
+
+
+
+
+
+
+```{r, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE,fig.align = 'center',fig.width=11,fig.height=5}
+
+
+dependent = "Surv(days_until_readmission, readm)"
+dependent_label = "Post-discharge readmission"
+
+vars_multi = c("age.factor","sex","ethnicity_4levels","diabetes_type_mhyn",
+               "chrincard")
+
+
+tab = dummy_data %>% 
+  finalfit(dependent, vars_multi, metrics = TRUE, add_dependent_label = FALSE)
+
+mykable = function(x){
+    knitr::kable(x, row.names = FALSE, align = c("l", "l", "r", "r", "r", "r", "r", "r", "r"))
+}
+
+# Your data manipulation and kable code
+# result <- tab[[1]] %>%
+#   rename(!!{{ dependent_label }} := label) %>%
+#   rename(" " = levels) %>%
+#   rename("  " = all)
+
+# Apply mykable to the result
+# mykable(result)
+
+# tab[[1]] %>%
+#   rename({{dependent_label}} := label) %>%
+#   rename(" " = levels) %>%
+#   rename("  " = all) %>%
+#   mykable()
+```
+
+
+
+
+```{r, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=10,fig.height=5,fig.align = 'center'}
+
+dummy_data %>% 
+  hr_plot(dependent, vars_multi,
+          breaks = c(0.03,0.1,0.3,1,3,10),
+          remove_ref = TRUE,
+          column_space = c(-1,0,0.75),
+          table_text_size = 3,
+          title_text_size = 16,
+          dependent_label = dependent_label) 
+
+tab[[2]] %>% knitr::kable()
+
+```
+
+
+
 
 
 
@@ -1025,9 +1330,8 @@ dummy_data$readmission_time <- dummy_data$readmission_time %>% replace_na(2000)
 dependent = "Surv(days_until_readmission, readm_ff)"
 dependent_label = "Post-discharge falls & fracture readmission"
 
-vars_multi = c("age.factor","sex","chrincard", "diabetes_combined","dialysis",
-               "ethnicity_4levels","hypertension_mhyn",
-               "no_comorbid","alt_conscious")
+vars_multi = c("age.factor","sex","ethnicity_4levels","IMD","no_comorbid","diabetes_type_mhyn",
+               "hypertension_mhyn","malnutrition_mhyn","Clinical_Frailty_Index","chrincard")
 
 
 tab = dummy_data %>% 
