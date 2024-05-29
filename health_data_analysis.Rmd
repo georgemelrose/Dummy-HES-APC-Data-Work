@@ -47,7 +47,8 @@ nrow(readm_before_90)
 ```
 
 
--   **50,023, 50%** are readmitted and **12,630, 12.6%** are readmitted within 90 days. Of those readmitted, **25.2%** are readmitted within 90 days of discharge. Not too dissimilar to Ramzi 2022 meta-analyses, **9.79%** prevalence of 90-day readmissions (10.1016/j.ajem.2021.10.059).
+-   **13,500, 13.5%** are readmitted and **8,560, 8.56%** are readmitted within 90 days. Of those readmitted, **63.4%** are readmitted within 90 days of discharge. Not too dissimilar to Ramzi 2022 meta-analyses, **9.79%** prevalence of 90-day readmissions (10.1016/j.ajem.2021.10.059).Docherty et al., 2023 (Scottish data) is much higher at 35.6% of patients after 1 year (https://www.thelancet.com/pdfs/journals/landig/PIIS2589-7500(23)00051-1.pdf). 
+
 
 
 ```{r deaths before readmission stats, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
@@ -66,7 +67,7 @@ dead_before_readmission90 <- dead_before_readmission  %>%
 nrow(dead_before_readmission90)
 ```
 
--   **4,215, 4.22%** patients died in total before readmission and **546, 0.55%** died within 90 days of discharge. Of those patients that died, **12.95%** died within 90 days. Real patient data more likely to have a much higher % of patients dying before readmission, within 90 days.(https://www.washingtonpost.com/health/2023/08/21/long-covid-lingering-effects-two-years-later/)
+-   **3,772, 3.77%** patients died in total before readmission and **3,075, 3.08%** died within 90 days of discharge. Of those patients that died before readmission, **81.5%** died within 90 days. 
 
 ```{r deaths in total stats, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
 
@@ -87,7 +88,9 @@ dead_after_90 <- dead %>%
 nrow(dead_before_90)
 ```
 
--   **8,441, 8.44%** patients died in total and **1045, 1.04%** died within 90 days of discharge. Of those patients that died, **12.4%** died within 90 days.The prevalence of 90 day post-discharge all-cause mortality dissimilar to Ramzi 2022 figure of **7.63%** (10.1016/j.ajem.2021.10.059).
+
+-   **11,800 , 11.8%** patients died in total and **4,316, 4.32%** died within 90 days of discharge. Of those patients that died, **36.6%** died within 90 days.The prevalence of 90 day post-discharge all-cause mortality dissimilar to Ramzi 2022 figure of **7.63%** (10.1016/j.ajem.2021.10.059).Docherty et al. 2023 (https://www.thelancet.com/pdfs/journals/landig/PIIS2589-7500(23)00051-1.pdf) had 11.7% all-cause mortality at 1 year after index admission. 
+
 
 
 ```{r events in total stats, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
@@ -102,6 +105,11 @@ event_before_90 <- event  %>%
 
 nrow(event_before_90)
 ```
+
+
+-   **17865 , 17.9%** of patients had an event (a readmission or death or both) and **12,675, 12.7%** had an event within 90 days of discharge. Of those patients that had an event, **70.9%** had an event within 90 days.
+
+
 
 ## Top 10 Causes of Readmission
 
@@ -175,21 +183,21 @@ autofit(p)
 ## Full Cohort Survival Probability for all Deaths {.flexbox .vcenter}
 
 ```{r restating factor variables, warning=FALSE, message=FALSE, include = FALSE, echo = FALSE}
-# yes_no_columns <- c("hypertension_mhyn", "chrincard", "malnutrition_mhyn", 
-#                     "dehydration_vsorres", "diabetes_type_mhyn", "alt_conscious",
-#                     "hypoxic_target", "o2_rx", "diabetes_combined", "infiltrates_faorres", "dialysis")
-# 
-# dummy_data <- dummy_data %>%
-#   mutate(across(all_of(yes_no_columns), 
-#                 ~ factor(., levels = c("Yes", "No")) %>% relevel(ref = "No")))
-# 
-# # Set "0" as the reference level for no_comorbid
-# dummy_data$no_comorbid <- factor(dummy_data$no_comorbid, levels = c("0", "1", "2", ">2")) %>% relevel(ref = "0")
-# 
-# ethnicity_levels <- c("White", "South Asian", "East Asian", "Black", "Other Ethnic Minority")
-# 
-# # Set "White" as the reference level for ethnicity_4levels
-# dummy_data$ethnicity_4levels <- factor(dummy_data$ethnicity_4levels, levels = ethnicity_levels) %>% relevel(ref = "White")
+yes_no_columns <- c("hypertension_mhyn", "chrincard", "malnutrition_mhyn",
+                    "dehydration_vsorres", "diabetes_type_mhyn", "alt_conscious",
+                    "hypoxic_target", "o2_rx", "diabetes_combined", "infiltrates_faorres", "dialysis")
+
+dummy_data <- dummy_data %>%
+  mutate(across(all_of(yes_no_columns),
+                ~ factor(., levels = c("Yes", "No")) %>% relevel(ref = "No")))
+
+# Set "0" as the reference level for no_comorbid
+dummy_data$no_comorbid <- factor(dummy_data$no_comorbid, levels = c("0", "1", "2", ">2")) %>% relevel(ref = "0")
+
+ethnicity_levels <- c("White", "South Asian", "East Asian", "Black", "Other Ethnic Minority")
+
+# Set "White" as the reference level for ethnicity_4levels
+dummy_data$ethnicity_4levels <- factor(dummy_data$ethnicity_4levels, levels = ethnicity_levels) %>% relevel(ref = "White")
 ```
 
 
@@ -237,7 +245,7 @@ ggsurvplot(fit_death,
 )
 ```
 
-## Male vs Female Survival Probability for all Deaths {.flexbox .vcenter}
+## Different factors' Survival Probability for all Deaths {.flexbox .vcenter}
 
 ```{r sex km curve, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=11.5,fig.height=5.3,fig.align = 'center'}
 
@@ -355,11 +363,15 @@ ggsurvplot(fit_death_age ,
 ```
 
 
-```{r age factor km curve, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=11.5,fig.height=5.3,fig.align = 'center'}
+```{r comorbidities km curve, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=11.5,fig.height=5.3,fig.align = 'center'}
+
+dummy_data <- dummy_data %>%
+  mutate(no_comorbid = factor(no_comorbid, levels = c("0", "1", "2", ">2")))
+
 
 fit_death_comorbid <- survfit(Surv(dummy_data$follow_up_time , dummy_data$all_deaths) ~ no_comorbid , data = dummy_data)
 
-legend_labels <- c(">2", "0","1","2")
+legend_labels <- c("0","1","2",">2")
 
 ggsurvplot(fit_death_comorbid ,
            xlim = c(0, 365),
@@ -394,25 +406,41 @@ ggsurvplot(fit_death_comorbid ,
 ```
 
 
-```{r age chrincard km curve, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=11.5,fig.height=5.3,fig.align = 'center'}
+```{r chrincard km curve, warning=FALSE, message=FALSE, include = TRUE, echo = FALSE,fig.width=11.5,fig.height=5.3,fig.align = 'center'}
 
 fit_death_chrincard  <- survfit(Surv(dummy_data$follow_up_time , dummy_data$all_deaths) ~ chrincard  , data = dummy_data)
 
-ggsurvplot(fit_death_chrincard ,
-           xlim = c(0, 90),
-           ylim = c(0.9,1),
-           break.time.by = 10,
+legend_labels <- c("No", "Yes")
+
+ggsurvplot(fit_death_diabetes ,
+           xlim = c(0, 365),
+           ylim = c(0, 1),
+           break.time.by = 28,
            xlab = "Days since discharge",
            ylab = "Survival Probability",
            pval = TRUE,
-           ggtheme = theme_light(),
-           risk.table = TRUE,
-           risk.table.y.text.col = T,
+           ggtheme = theme_minimal() + theme(
+                  panel.grid.major = element_blank(), # Remove major grid lines
+                  panel.grid.minor = element_blank(), # Remove minor grid lines
+                  panel.background = element_blank(), # Remove panel background
+                  plot.background = element_blank(),  # Remove plot background
+                  axis.line = element_line(color = "black"), # Keep axis lines if desired
+                 axis.title = element_text(size = 20), # Increase axis title size
+                  axis.text = element_text(size = 17),  # Increase axis text size
+                  legend.text = element_text(size = 20), # Increase legend text size
+                  legend.title = element_text(size = 25), # Increase legend title size
+                  plot.title = element_text(size = 25), # Increase plot title size
+                  plot.subtitle = element_text(size = 20), # Increase plot subtitle size
+                  legend.key.size = unit(4, "lines") # Increase legend key size
+                ),
+           risk.table = FALSE,
+           risk.table.y.text.col = TRUE,
            risk.table.height = 0.2,
            risk.table.y.text = FALSE,
-           conf.int = TRUE,
-           legend.labs = c("No","Yes"), cumcensor = TRUE,
-           pval.coord = c(0, 0.96), pval.method = TRUE, pval.method.coord = c(0, 0.97), conf.int.style = "step")
+         conf.int = TRUE, cumcensor = FALSE, conf.int.style = "step",pval.coord = c(0, 0.47), pval.method = TRUE, pval.method.coord = c(0, 0.56),
+           legend.labs = legend_labels,
+           legend.title = "Diabetes",pval.size = 10, pval.method.size = 10
+)
 ```
 
 
@@ -633,8 +661,6 @@ ggplot(ciplot, aes(x = time, y = est, color = No.Comorbidities)) +
            size = 7.5)
 
 ```
-
-
 
 
 
