@@ -1,5 +1,5 @@
 # Dummy-HES-APC-Data-Work
-Scripts for generating and analysing fake HES-APC NHS England EHR data, used for a presentation in an interview for the post of "Health Data Epidemiologist" at a Russell Group institution. 
+Scripts for generating and analysing fake HES-APC NHS England EHR data, used for a presentation in an interview for the post of "Research Assistant in Health Data Science" at a Russell Group institution. 
 
 From Herbert et al., 2017 - 10.1093/ije/dyx015. 
 
